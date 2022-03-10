@@ -10,7 +10,7 @@ const vertexShaderText =
     varying vec3 fragColor;
     
     void main(){
-        fragColor = vec3(0.0, 1.0, 0.0);
+        fragColor = vec3(0.1, 1.0, 0.0);
         gl_Position = vec4(vertPosition, 0.0, 1.0);
     }
     
@@ -64,13 +64,22 @@ function init(){
         return;
     }
 
-    gl.clearColor(1.0, 0.0, 0, 1);
+    gl.clearColor(1.0, 0.0, 0.7, 1);
 
     // prepare triangle
     const triangleVertices=[
         0.0, 0.5,
-        -0.5, -0.5,
-        0.5, -0.5
+        -0.5, -0.8,
+        0.5, -0.8,
+        -0.9, 0.9,
+        -0.1, 0.9,
+        -0.5, 0.4,
+        0.9, 0.9,
+        0.1, 0.9,
+        0.5, 0.4,
+        0.9, -0.9,
+        0.9, -0.1,
+        0.4, -0.5
     ];
 
     const triangleVBO = gl.createBuffer();
@@ -90,7 +99,7 @@ function init(){
 
     // draw triangle
     gl.enableVertexAttribArray(positionAttributeLocation);
-    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    gl.drawArrays(gl.TRIANGLES, 0, triangleVertices.length/2);
 
 }
 
