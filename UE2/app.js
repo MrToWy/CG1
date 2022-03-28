@@ -163,6 +163,9 @@ function init(){
     let change = 1;
     
     function loop() {
+
+        //gl.clear(gl.COLOR_BUFFER_BIT);
+        
         // Code, der pro Frame ausgeführt wird        
         counter += change;
 
@@ -176,7 +179,7 @@ function init(){
 
         gl.drawArrays(gl.TRIANGLES, 0, triangleVertices.length/2);
 
-        gl.uniform1f(angleAttribLocation, counter / 150);
+        gl.uniform1f(angleAttribLocation, counter / 50);
         
         requestAnimationFrame(loop);
     };
