@@ -21,16 +21,18 @@ varying float fragValue;
 
 void main(){
     
-    vec3 color1 = 1==1 ? vec3(1.0, 0.0, 0.0) : vec3(0.0, 1.0, 0.0);
-    vec3 color2 = 2==1 ? vec3(1.0, 0.0, 0.0) : vec3(0.0, 1.0, 0.0);
+    vec3 color1 = vec3(0.0,0.0,1.0);
+    vec3 color2 = vec3(1.0,0.0,0.0);
+
+    float pi = 3.141;
+    float weight = sin(4.*fragValue*pi) + 0.5;
     
-    vec3 fragColor = mix(color1, color2, step(0.0, sin(gl_FragCoord.x * 0.016)));
+    vec3 fragColor = mix(color1, color2, weight);
     
     
-   // fragColor[0] = smoothstep(0.4,0.6,fragColor[0]);
-    //fragColor[1] = smoothstep(0.4,0.6,fragColor[1]);
-    //fragColor[2] = smoothstep(0.4,0.6,fragColor[2]);
-    gl_FragColor = vec4(fragColor, 1.0);
+    //fragColor[0] = smoothstep(0.2,0.4,fragColor[0]);
+    //fragColor[1] = smoothstep(0.2,0.4,fragColor[1]);
+    //fragColor[2] = smoothstep(0.2,0.4,fragColor[2]);
 }
 `;
 
