@@ -89,7 +89,13 @@ function init(){
     ];
 
     const indexArray = [
-        0,1,2,3,3,4,4,5,6,7,7,8,8,9,10,11,11,12,12,13,14,15
+        0,1,2,3,    // right line
+        3,4,        // from right to mid
+        4,5,6,7,    // middle line
+        7,8,        // from mid to left
+        8,9,10,11,  // left line
+        11,12,      // from left to bot
+        12,13,14,15 // bot line
     ];
 
 
@@ -122,6 +128,8 @@ function init(){
         0
     );
     gl.enableVertexAttribArray(positionAttribLocation);
+
+    // enable cullface
     gl.enable(gl.CULL_FACE);
     gl.frontFace(gl.CCW); //gl.CW
 
