@@ -2062,7 +2062,7 @@ THE SOFTWARE.
   /**
    * Set a mat4 to the identity matrix
    *
-   * @param {Float32Array} out the receiving matrix
+   * @param {mat4} out the receiving matrix
    * @returns {mat4} out
    */
 
@@ -3329,7 +3329,7 @@ THE SOFTWARE.
    * which matches WebGL/OpenGL's clip volume.
    * Passing null/undefined/no value for far will generate infinite projection matrix.
    *
-   * @param {Float32Array} out mat4 frustum matrix will be written into
+   * @param {mat4} out mat4 frustum matrix will be written into
    * @param {number} fovy Vertical field of view in radians
    * @param {number} aspect Aspect ratio. typically viewport width/height
    * @param {number} near Near bound of the frustum
@@ -3534,10 +3534,10 @@ THE SOFTWARE.
    * Generates a look-at matrix with the given eye position, focal point, and up axis.
    * If you want a matrix that actually makes an object look at another object, you should use targetTo instead.
    *
-   * @param {Float32Array} out mat4 frustum matrix will be written into
-   * @param {number[]} eye Position of the viewer
-   * @param {number[]} center Point the viewer is looking at
-   * @param {number[]} up vec3 pointing up
+   * @param {mat4} out mat4 frustum matrix will be written into
+   * @param {ReadonlyVec3} eye Position of the viewer
+   * @param {ReadonlyVec3} center Point the viewer is looking at
+   * @param {ReadonlyVec3} up vec3 pointing up
    * @returns {mat4} out
    */
 
