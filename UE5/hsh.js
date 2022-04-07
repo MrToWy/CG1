@@ -6,15 +6,19 @@ const vertexShaderText =
 precision mediump float;
 
 attribute vec3 vertPosition;
+attribute vec3 fColor;
 varying vec3 fragColor;
 
 uniform mat4 mWorld;
 uniform mat4 mView;
 uniform mat4 mProj;
+uniform mat4 mScale;
+uniform mat4 mTransl;
 
 void main(){
-    fragColor = vec3(0.5,0.0,0.5);
-    gl_Position = mProj * mView * mWorld * vec4(vertPosition, 1.0);
+    //fragColor = vec3(0.5,0.0,0.5);
+    fragColor = fColor;
+    gl_Position = mTransl * mScale * mProj * mView * mWorld * vec4(vertPosition, 1.0);
 }
 `;
 
@@ -69,7 +73,7 @@ function init(){
     for (let z = 0; z < xArray.length; z++) {
         for (let y = 0; y < yArray.length; y++) {
             for (let x = 0; x < zArray.length; x++) {
-                verticies.push(xArray[x], yArray[y], zArray[z], 1, 0, 0);
+                verticies.push(xArray[x], yArray[y], zArray[z], 0.5 + xArray[x], 0.5 + yArray[y], 0.5 + zArray[z]);
             }
         }
     }
@@ -88,6 +92,10 @@ function init(){
         1, 5,
         7, 7, 
         1, 3,
+        3, 2,
+        2, 6,
+        4, 4,
+        2, 0
         
     ];
 
@@ -111,20 +119,33 @@ function init(){
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.useProgram(program);
     gl.bindBuffer(gl.ARRAY_BUFFER, triangleVBO);
+
     const positionAttribLocation = gl.getAttribLocation(program, 'vertPosition');
     gl.vertexAttribPointer(
         positionAttribLocation,
         3, // dimension
         gl.FLOAT,
         gl.FALSE,
-        3 * Float32Array.BYTES_PER_ELEMENT,
+        6 * Float32Array.BYTES_PER_ELEMENT,
         0
     );
     gl.enableVertexAttribArray(positionAttribLocation);
 
+
+    const colorAttribLocation = gl.getAttribLocation(program, 'fColor');
+    gl.vertexAttribPointer(
+        colorAttribLocation,
+        3, // dimension
+        gl.FLOAT,
+        gl.FALSE,
+        6 * Float32Array.BYTES_PER_ELEMENT,
+        3 * Float32Array.BYTES_PER_ELEMENT
+    );
+    gl.enableVertexAttribArray(colorAttribLocation);
+
     // enable cullface
-    //gl.enable(gl.CULL_FACE);
-    //gl.frontFace(gl.CCW); //gl.CW
+    gl.enable(gl.CULL_FACE);
+    gl.frontFace(gl.CW); //gl.CW
 
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexVBO);
 
@@ -133,21 +154,26 @@ function init(){
     let matWorldUniformLocation = gl.getUniformLocation(program, 'mWorld');
     let matViewUniformLocation = gl.getUniformLocation(program, 'mView');
     let matProjUniformLocation = gl.getUniformLocation(program, 'mProj');
+    let matScaleUniformLocation = gl.getUniformLocation(program, 'mScale');
+    let matTranslUniformLocation = gl.getUniformLocation(program, 'mTransl');
 
     let worldMatrix = new glMatrix.mat4.create();
     let viewMatrix = new glMatrix.mat4.create();
     let projMatrix = new glMatrix.mat4.create();
+    let scaleMatrix = new glMatrix.mat4.create();
+    let translateMatrix = new glMatrix.mat4.create();
     
     glMatrix.mat4.identity(worldMatrix);
     glMatrix.mat4.lookAt(viewMatrix, [0, 0, -10], [0, 0, 0], [0, 1, 0]);
     glMatrix.mat4.perspective(projMatrix, 0.785398, canvas.clientWidth / canvas.clientHeight, 0.1, 1000.0);
-
-
+    glMatrix.mat4.scale(scaleMatrix,  worldMatrix, [0.2, 0.2, 0.2]);
+    glMatrix.mat4.translate(translateMatrix, worldMatrix, [0.2, 0.4, 0.5]);
 
     gl.uniformMatrix4fv(matWorldUniformLocation, gl.FALSE, worldMatrix);
     gl.uniformMatrix4fv(matViewUniformLocation, gl.FALSE, viewMatrix);
     gl.uniformMatrix4fv(matProjUniformLocation, gl.FALSE, projMatrix);
-
+    gl.uniformMatrix4fv(matScaleUniformLocation, gl.FALSE, scaleMatrix);
+    gl.uniformMatrix4fv(matTranslUniformLocation, gl.FALSE, translateMatrix);
 
     
     let xRotationMatrix = new glMatrix.mat4.create();
@@ -161,10 +187,9 @@ function init(){
     let angle = 0;
     let loop = function () {
         angle = performance.now() / 1000 / 6 * 2 * Math.PI;
-        console.log(angle);
         
         glMatrix.mat4.rotate(yRotationMatrix, identityMatrix, angle, [0, 1, 0]);
-        glMatrix.mat4.rotate(xRotationMatrix, identityMatrix, angle / 4, [0, 0, 0]);
+        glMatrix.mat4.rotate(xRotationMatrix, identityMatrix, angle / 4, [1, 0, 0]);
         glMatrix.mat4.mul(worldMatrix, yRotationMatrix, xRotationMatrix);
         gl.uniformMatrix4fv(matWorldUniformLocation, gl.FALSE, worldMatrix);
         
