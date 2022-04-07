@@ -12,13 +12,12 @@ varying vec3 fragColor;
 uniform mat4 mWorld;
 uniform mat4 mView;
 uniform mat4 mProj;
-uniform mat4 mScale;
-uniform mat4 mRotate;
+uniform mat4 mTranslate;
 
 void main(){
     //fragColor = vec3(0.5,0.0,0.5);
     fragColor = fColor;
-    gl_Position =  mScale * mProj * mView * mWorld * vec4(vertPosition, 1.0);
+    gl_Position =  mProj * mView *   mTranslate * mWorld * vec4(vertPosition, 1.0);
 }
 `;
 
@@ -149,39 +148,43 @@ function init(){
 
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexVBO);
 
-    const moveToBottom = -0.6;
-    const distanceBetweenCubes = 5.6;
-    const recursiveDistanceBetweenCubes = 0.08;
+    const moveToBottom = -1.9;
+    const distanceBetweenCubes = 3.0;
     
-    const cubeWidth = 3;
+    
     const cubeHeight = 0.4;
+    
+    const angleBetweenCubes = 45;
 
     for (let i = 0; i < 9; i++) {
+        let cubeWidth = 2/i;
         
         let matWorldUniformLocation = gl.getUniformLocation(program, 'mWorld');
         let matViewUniformLocation = gl.getUniformLocation(program, 'mView');
         let matProjUniformLocation = gl.getUniformLocation(program, 'mProj');
-        let matScaleUniformLocation = gl.getUniformLocation(program, 'mScale');
+        let matTranslateUniformLocation = gl.getUniformLocation(program, 'mTranslate');
 
         let identityMatrix = new glMatrix.mat4.create();
         let worldMatrix = new glMatrix.mat4.create();
         let viewMatrix = new glMatrix.mat4.create();
         let projMatrix = new glMatrix.mat4.create();
-        let scaleMatrix = new glMatrix.mat4.create();
-        let rotateMatrix = new glMatrix.mat4.create();
+        let translateMatrix = new glMatrix.mat4.create();
 
         glMatrix.mat4.identity(identityMatrix);
-        glMatrix.mat4.translate(worldMatrix, identityMatrix, [0, i/distanceBetweenCubes + moveToBottom - recursiveDistanceBetweenCubes * i, 0])
-        
-        glMatrix.mat4.lookAt(viewMatrix, [0, 0, -9], [0, 0, 0], [0, 1, 0]);
-        glMatrix.mat4.perspective(projMatrix, 0.785398, canvas.clientWidth / canvas.clientHeight, 0.1, 1000.0);
-        glMatrix.mat4.scale(scaleMatrix, worldMatrix, [cubeWidth/i, cubeHeight, 0]);
-        glMatrix.mat4.rotateY(rotateMatrix, worldMatrix, i*2);
 
-        gl.uniformMatrix4fv(matWorldUniformLocation, gl.FALSE, rotateMatrix);
+        glMatrix.mat4.rotateY(translateMatrix, identityMatrix, i * angleBetweenCubes * Math.PI/180);
+        glMatrix.mat4.translate(translateMatrix, translateMatrix, [0, i/distanceBetweenCubes + moveToBottom, 0])
+        glMatrix.mat4.scale(translateMatrix, translateMatrix, [cubeWidth, cubeHeight, cubeWidth]);
+        
+        glMatrix.mat4.lookAt(viewMatrix, [0, 5, 9], [0, 0, 1], [0, 1, 0]);
+        glMatrix.mat4.perspective(projMatrix, 45 * Math.PI/180, canvas.clientWidth / canvas.clientHeight, 0.1, 1000.0);
+        
+        
+
+        gl.uniformMatrix4fv(matWorldUniformLocation, gl.FALSE, worldMatrix);
         gl.uniformMatrix4fv(matViewUniformLocation, gl.FALSE, viewMatrix);
         gl.uniformMatrix4fv(matProjUniformLocation, gl.FALSE, projMatrix);
-        gl.uniformMatrix4fv(matScaleUniformLocation, gl.FALSE, scaleMatrix);
+        gl.uniformMatrix4fv(matTranslateUniformLocation, gl.FALSE, translateMatrix);
 
 
         // draw triangle
