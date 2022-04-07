@@ -149,10 +149,15 @@ function init(){
 
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexVBO);
 
+    const moveToBottom = -0.6;
+    const distanceBetweenCubes = 5.6;
+    const recursiveDistanceBetweenCubes = 0.08;
+    
+    const cubeWidth = 3;
+    const cubeHeight = 0.4;
 
-    for (let i = 0; i < 40; i++) {
-
-
+    for (let i = 0; i < 9; i++) {
+        
         let matWorldUniformLocation = gl.getUniformLocation(program, 'mWorld');
         let matViewUniformLocation = gl.getUniformLocation(program, 'mView');
         let matProjUniformLocation = gl.getUniformLocation(program, 'mProj');
@@ -166,11 +171,11 @@ function init(){
         let rotateMatrix = new glMatrix.mat4.create();
 
         glMatrix.mat4.identity(identityMatrix);
-        glMatrix.mat4.translate(worldMatrix, identityMatrix, [0, i/5 -4, 0])
+        glMatrix.mat4.translate(worldMatrix, identityMatrix, [0, i/distanceBetweenCubes + moveToBottom - recursiveDistanceBetweenCubes * i, 0])
         
         glMatrix.mat4.lookAt(viewMatrix, [0, 0, -9], [0, 0, 0], [0, 1, 0]);
         glMatrix.mat4.perspective(projMatrix, 0.785398, canvas.clientWidth / canvas.clientHeight, 0.1, 1000.0);
-        glMatrix.mat4.scale(scaleMatrix, worldMatrix, [0.5, 0.5, 0.5]);
+        glMatrix.mat4.scale(scaleMatrix, worldMatrix, [cubeWidth/i, cubeHeight, 0]);
         glMatrix.mat4.rotateY(rotateMatrix, worldMatrix, i*2);
 
         gl.uniformMatrix4fv(matWorldUniformLocation, gl.FALSE, rotateMatrix);
