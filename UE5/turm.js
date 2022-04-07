@@ -13,12 +13,12 @@ uniform mat4 mWorld;
 uniform mat4 mView;
 uniform mat4 mProj;
 uniform mat4 mScale;
-uniform mat4 mTransl;
+uniform mat4 mRotate;
 
 void main(){
     //fragColor = vec3(0.5,0.0,0.5);
     fragColor = fColor;
-    gl_Position = mTransl * mScale * mProj * mView * mWorld * vec4(vertPosition, 1.0);
+    gl_Position =  mScale * mProj * mView * mWorld * vec4(vertPosition, 1.0);
 }
 `;
 
@@ -150,61 +150,38 @@ function init(){
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexVBO);
 
 
+    for (let i = 0; i < 40; i++) {
 
-    let matWorldUniformLocation = gl.getUniformLocation(program, 'mWorld');
-    let matViewUniformLocation = gl.getUniformLocation(program, 'mView');
-    let matProjUniformLocation = gl.getUniformLocation(program, 'mProj');
-    let matScaleUniformLocation = gl.getUniformLocation(program, 'mScale');
-    let matTranslUniformLocation = gl.getUniformLocation(program, 'mTransl');
 
-    let worldMatrix = new glMatrix.mat4.create();
-    let viewMatrix = new glMatrix.mat4.create();
-    let projMatrix = new glMatrix.mat4.create();
-    let scaleMatrix = new glMatrix.mat4.create();
-    let translateMatrix = new glMatrix.mat4.create();
-    
-    glMatrix.mat4.identity(worldMatrix);
-    glMatrix.mat4.lookAt(viewMatrix, [0, 0, -10], [0, 0, 0], [0, 1, 0]);
-    glMatrix.mat4.perspective(projMatrix, 0.785398, canvas.clientWidth / canvas.clientHeight, 0.1, 1000.0);
-    glMatrix.mat4.scale(scaleMatrix,  worldMatrix, [0.2, 0.2, 0.2]);
-    glMatrix.mat4.translate(translateMatrix, worldMatrix, [0.2, 0.4, 0.5]);
+        let matWorldUniformLocation = gl.getUniformLocation(program, 'mWorld');
+        let matViewUniformLocation = gl.getUniformLocation(program, 'mView');
+        let matProjUniformLocation = gl.getUniformLocation(program, 'mProj');
+        let matScaleUniformLocation = gl.getUniformLocation(program, 'mScale');
 
-    gl.uniformMatrix4fv(matWorldUniformLocation, gl.FALSE, worldMatrix);
-    gl.uniformMatrix4fv(matViewUniformLocation, gl.FALSE, viewMatrix);
-    gl.uniformMatrix4fv(matProjUniformLocation, gl.FALSE, projMatrix);
-    gl.uniformMatrix4fv(matScaleUniformLocation, gl.FALSE, scaleMatrix);
-    gl.uniformMatrix4fv(matTranslUniformLocation, gl.FALSE, translateMatrix);
+        let identityMatrix = new glMatrix.mat4.create();
+        let worldMatrix = new glMatrix.mat4.create();
+        let viewMatrix = new glMatrix.mat4.create();
+        let projMatrix = new glMatrix.mat4.create();
+        let scaleMatrix = new glMatrix.mat4.create();
+        let rotateMatrix = new glMatrix.mat4.create();
 
-    
-    let xRotationMatrix = new glMatrix.mat4.create();
-    let yRotationMatrix = new glMatrix.mat4.create();
-
-    //
-    // Main render loop
-    //
-    let identityMatrix = new Float32Array(16);
-    glMatrix.mat4.identity(identityMatrix);
-    let angle = 0;
-    let loop = function () {
-        angle = performance.now() / 1000 / 6 * 2 * Math.PI;
+        glMatrix.mat4.identity(identityMatrix);
+        glMatrix.mat4.translate(worldMatrix, identityMatrix, [0, i/5 -4, 0])
         
-        glMatrix.mat4.rotate(yRotationMatrix, identityMatrix, angle, [0, 1, 0]);
-        glMatrix.mat4.rotate(xRotationMatrix, identityMatrix, angle / 4, [1, 0, 0]);
-        glMatrix.mat4.mul(worldMatrix, yRotationMatrix, xRotationMatrix);
-        gl.uniformMatrix4fv(matWorldUniformLocation, gl.FALSE, worldMatrix);
-        
-        gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
-        gl.drawElements(gl.TRIANGLE_STRIP,indexArray.length,gl.UNSIGNED_SHORT,0);
+        glMatrix.mat4.lookAt(viewMatrix, [0, 0, -9], [0, 0, 0], [0, 1, 0]);
+        glMatrix.mat4.perspective(projMatrix, 0.785398, canvas.clientWidth / canvas.clientHeight, 0.1, 1000.0);
+        glMatrix.mat4.scale(scaleMatrix, worldMatrix, [0.5, 0.5, 0.5]);
+        glMatrix.mat4.rotateY(rotateMatrix, worldMatrix, i*2);
 
-        requestAnimationFrame(loop);
-    };
-    requestAnimationFrame(loop);
-    
+        gl.uniformMatrix4fv(matWorldUniformLocation, gl.FALSE, rotateMatrix);
+        gl.uniformMatrix4fv(matViewUniformLocation, gl.FALSE, viewMatrix);
+        gl.uniformMatrix4fv(matProjUniformLocation, gl.FALSE, projMatrix);
+        gl.uniformMatrix4fv(matScaleUniformLocation, gl.FALSE, scaleMatrix);
 
 
-    // draw triangle
-    gl.drawElements(gl.TRIANGLE_STRIP,indexArray.length,gl.UNSIGNED_SHORT,0);
-    
+        // draw triangle
+        gl.drawElements(gl.TRIANGLE_STRIP, indexArray.length, gl.UNSIGNED_SHORT, 0);
+    }
 }
 
 window.onload = init;
