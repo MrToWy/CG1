@@ -62,14 +62,14 @@ function init(){
 
     let verticies = []
 
-    const x = [-0.5, 0.5]
-    const y = [-0.5, 0.5]
-    const z = [-0.5, 0.5]
+    const xArray = [-0.5, 0.5]
+    const yArray = [-0.5, 0.5]
+    const zArray = [-0.5, 0.5]
 
-    for (let i = 0; i < x.length; i++) {
-        for (let j = 0; j < y.length; j++) {
-            for (let k = 0; k < z.length; k++) {
-                verticies.push(x[k], y[j], z[i]);
+    for (let z = 0; z < xArray.length; z++) {
+        for (let y = 0; y < yArray.length; y++) {
+            for (let x = 0; x < zArray.length; x++) {
+                verticies.push(xArray[x], yArray[y], zArray[z], 1, 0, 0);
             }
         }
     }
