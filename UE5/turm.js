@@ -149,10 +149,10 @@ function init(){
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexVBO);
 
     const moveToBottom = -1.9;
-    const distanceBetweenCubes = 3.0;
+    const distanceBetweenCubes = 3.8;
     
     
-    const cubeHeight = 0.4;
+    const cubeHeight = 0.3;
     
     const angleBetweenCubes = 45;
 
@@ -176,7 +176,9 @@ function init(){
         glMatrix.mat4.translate(translateMatrix, translateMatrix, [0, i/distanceBetweenCubes + moveToBottom, 0])
         glMatrix.mat4.scale(translateMatrix, translateMatrix, [cubeWidth, cubeHeight, cubeWidth]);
         
-        glMatrix.mat4.lookAt(viewMatrix, [0, 5, 9], [0, 0, 1], [0, 1, 0]);
+        let eye = [1, 2, 5];
+        glMatrix.mat4.lookAt(viewMatrix, eye, [0, 0, 1], [0, 1, 0]);
+        glMatrix.mat4.rotateY(viewMatrix, viewMatrix, 45 * Math.PI/180);
         glMatrix.mat4.perspective(projMatrix, 45 * Math.PI/180, canvas.clientWidth / canvas.clientHeight, 0.1, 1000.0);
         
         
