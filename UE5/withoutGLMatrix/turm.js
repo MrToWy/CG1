@@ -170,14 +170,15 @@ function init() {
 
             identity(identityMatrix);
 
-            glMatrix.mat4.rotateY(translateMatrix, identityMatrix, i * angleBetweenCubes * Math.PI / 180);
-            glMatrix.mat4.translate(translateMatrix, translateMatrix, [0, i / distanceBetweenCubes + moveToBottom, 0])
-            glMatrix.mat4.scale(translateMatrix, translateMatrix, [cubeWidth, cubeHeight, cubeWidth]);
+            rotateY(translateMatrix, identityMatrix, i * angleBetweenCubes * Math.PI / 180);
+            translate(translateMatrix, translateMatrix, [0, i / distanceBetweenCubes + moveToBottom, 0])
+            scale(translateMatrix, translateMatrix, [cubeWidth, cubeHeight, cubeWidth]);
 
             let eye = [1, 2, 5];
-            glMatrix.mat4.lookAt(viewMatrix, eye, [0, 0, 1], [0, 1, 0]);
+            lookAt(viewMatrix, eye, [0, 0, 1], [0, 1, 0]);
+            
             glMatrix.mat4.rotateY(viewMatrix, viewMatrix, counter * Math.PI / 180);
-            glMatrix.mat4.perspective(projMatrix, 45 * Math.PI / 180, canvas.clientWidth / canvas.clientHeight, 0.1, 1000.0);
+            perspective(projMatrix, 45 * Math.PI / 180, canvas.clientWidth / canvas.clientHeight, 0.1, 1000.0);
 
             gl.uniformMatrix4fv(matWorldUniformLocation, gl.FALSE, worldMatrix);
             gl.uniformMatrix4fv(matViewUniformLocation, gl.FALSE, viewMatrix);
