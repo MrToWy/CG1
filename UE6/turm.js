@@ -1,39 +1,18 @@
 'use strict'
 
 
-const vertexShaderText =
-    `
-precision mediump float;
 
-attribute vec3 vertPosition;
-attribute vec3 fColor;
-varying vec3 fragColor;
-
-uniform mat4 mWorld;
-uniform mat4 mView;
-uniform mat4 mProj;
-uniform mat4 mTranslate;
-
-void main(){
-    //fragColor = vec3(0.5,0.0,0.5);
-    fragColor = fColor;
-    gl_Position =  mProj * mView *   mTranslate * mWorld * vec4(vertPosition, 1.0);
-}
-`;
-
-const fragmentShaderText =
-    `
-precision mediump float;
-varying vec3 fragColor;
-
-void main(){
-    gl_FragColor = vec4(fragColor, 1.0);
-}
-`;
-
-
-function init() {
-    console.log("Wir malen Kreise!");
+async function init() {
+    
+    let vertextRequest = await fetch("vertexShader.vert");
+    let vertexShaderText = await vertextRequest.text();
+    
+    let fragmentRequest = await fetch("fragmentShader.frag");
+    let fragmentShaderText = await fragmentRequest.text();
+    
+    console.log(vertexShaderText);
+    
+    
     const canvas = document.getElementById("cg1");
     const gl = canvas.getContext('webgl');
 
