@@ -69,9 +69,23 @@ function rotateY(out, input, rad){
 function perspective(out, fovy, aspect, near, far){
     
     identity(out);
-    out[10] = 1 + (far/near);
-    out[11] = -1/near;
-    out[14] = far;
+
+    let n = near;
+    let f = far;
+    
+    let t = Math.tan(fovy/2) * near;
+    let b = -t;
+
+    let r = t * aspect;
+    let l = -r;
+
+    out[0] = 2/(r-l);
+    out[5] = 2/(t-b);
+    out[8] = (1/n) * ((r+l)/(r-l));
+    out[9] = (1/n) * ((t+b)/(t-b));
+    out[10] = -(1/n) * ((f+n)/(f-n));
+    out[11] = -(1/n);
+    out[14] = -(2*f/(f-n));
     out[15] = 0;
 }
 
