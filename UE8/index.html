@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Ein Dreieck</title>
+</head>
+<body>
+
+<h1>UE3</h1>
+
+<canvas width="800" height="600" id="cg1">
+
+</canvas>
+
+<script src="gl-matrix.js"></script>
+<script src="matrix.js"></script>
+
+<script>
+  let identityMatrix = new glMatrix.mat3.create();
+  getExampleMatrix(identityMatrix);
+
+  console.log(identityMatrix);
+
+  console.log("determinante: ", getDeterminante3x3(identityMatrix));
+
+  transpose(identityMatrix);
+  console.log("transponiert: ", identityMatrix);
+
+  const adjugateMatrix = getAdjugateMatrix(identityMatrix);
+  console.log("adjugateMatrix: ", adjugateMatrix);
+</script>
+
+<script src="experiment3.js"></script>
+</body>
+</html>
