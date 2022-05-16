@@ -6,29 +6,13 @@
 </head>
 <body>
 
-<h1>UE3</h1>
+<h1>UE1</h1>
 
-<canvas width="800" height="600" id="cg1">
+<canvas width="800" height="600" id="triangle">
 
 </canvas>
 
-<script src="gl-matrix.js"></script>
-<script src="matrix.js"></script>
-
-<script>
-  let identityMatrix = new glMatrix.mat3.create();
-  getExampleMatrix(identityMatrix);
-
-  console.log(identityMatrix);
-
-  console.log("determinante: ", getDeterminante3x3(identityMatrix));
-
-  transpose(identityMatrix);
-  console.log("transponiert: ", identityMatrix);
-
-  const adjugateMatrix = getAdjugateMatrix(identityMatrix);
-  console.log("adjugateMatrix: ", adjugateMatrix);
-</script>
+<script src="obj.js"></script>
 
 <script src="experiment3.js"></script>
 </body>
