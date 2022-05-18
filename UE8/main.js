@@ -3,8 +3,10 @@
 function objToVBO(objString){
 
     let objArray = objString.split("\n");
+    let v = [];
+    let vt = [];
+    let vn = [];
     let vbo = [];
-    let indicies = [];
 
     for (let i = 0; i < objArray.length; i++) {
         let line = objArray[i];
@@ -13,16 +15,43 @@ function objToVBO(objString){
         let prefix = columns[0];
 
         if (prefix === "v"){
-            let x = columns[1];
-            let y = columns[2];
-            let z = columns[3];
+            let x = parseFloat(columns[1]);
+            let y = parseFloat(columns[2]);
+            let z = parseFloat(columns[3]);
 
-            vbo.push([x, y, z]);
+            v.push([x, y, z]);
+        }
+        else if(prefix === "vt"){
+            let x = parseFloat(columns[1]);
+            let y = parseFloat(columns[2]);
+
+            vt.push([x, y]);
+        }
+        else if(prefix === "vn"){
+            let x = parseFloat(columns[1]);
+            let y = parseFloat(columns[2]);
+            let z = parseFloat(columns[3]);
+
+            vn.push([x, y, z]);
         }
         else if(prefix === "f"){
-            let x = columns[1].split("/");
-            let y = columns[2].split("/");
-            let z = columns[3].split("/");
+
+            for (let j = 1; j < 4; j++) {
+                let triplet = columns[j].split("/");
+
+                let verticiesIndex = triplet[0]-1;
+                let texturesIndex = triplet[1]-1;
+                let normalIndex = triplet[2]-1;
+
+                // push vertices
+                vbo.push(v[verticiesIndex][0], v[verticiesIndex][1], v[verticiesIndex][2]);
+
+                // push textures
+                vbo.push(vt[texturesIndex][0], vt[texturesIndex][1]);
+
+                // push normals
+                vbo.push(vn[normalIndex][0], vn[normalIndex][1], vn[normalIndex][2]);
+            }
         }
 
     }
@@ -39,11 +68,14 @@ async function init(){
 
     let teapotRequest = await fetch("teapot.obj");
     let teapotText = await teapotRequest.text();
+    const triangleVertices = objToVBO(teapotText);
+    console.log(triangleVertices);
 
+    console.log(await fetchModel("teapot.obj"));
 
     const triangle = document.getElementById("triangle")
     const gl = triangle.getContext("webgl");
-
+    
     const vertexShader = gl.createShader(gl.VERTEX_SHADER);
     gl.shaderSource(vertexShader, vertexShaderText);
     gl.compileShader(vertexShader);
@@ -74,11 +106,9 @@ async function init(){
         return;
     }
 
-    gl.clearColor(1.0, 0.0, 0.7, 1);
+    gl.clearColor(0.0, 1.0, 0.0, 1);
 
-    // prepare triangle
-    const triangleVertices = await fetchModel("teapot.obj");
-    console.log(triangleVertices);
+    
     
 
     const triangleVBO = gl.createBuffer();
@@ -110,7 +140,7 @@ async function init(){
     //gl.enable(gl.DEPTH_TEST);
         
     
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, triangleVertices.length/8);
+    gl.drawArrays(gl.TRIANGLES, 0, triangleVertices.length/8);
 
 }
 
