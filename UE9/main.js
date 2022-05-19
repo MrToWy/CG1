@@ -191,6 +191,29 @@ async function init() {
 
 
         gl.drawArrays(gl.TRIANGLES, 0, triangleVertices.length / 8);
+
+        
+        
+        // second cube
+    
+        translate(translateMatrix, translateMatrix, [4, 0, 0])
+        gl.uniformMatrix4fv(matTranslateUniformLocation, gl.FALSE, translateMatrix);
+
+
+        // texture
+        const texture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, texture)
+
+        const textureImage = document.getElementById("videoTexture")
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, textureImage)
+        gl.generateMipmap(gl.TEXTURE_2D)
+
+        gl.bindTexture(gl.TEXTURE_2D, texture)
+        
+        
+        gl.drawArrays(gl.TRIANGLES, 0, triangleVertices.length / 8);
+        
+        
         
         requestAnimationFrame(loop);
     }
