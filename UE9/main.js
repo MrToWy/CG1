@@ -78,13 +78,12 @@ async function init() {
     
     
     
-    
     // texture
     const texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, texture)
     
     const textureImage = document.getElementById("texture")
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, 512, 512, 0, gl.RGB, gl.UNSIGNED_BYTE, textureImage)
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, textureImage)
     gl.generateMipmap(gl.TEXTURE_2D)
 
     gl.bindTexture(gl.TEXTURE_2D, texture)
@@ -141,6 +140,12 @@ async function init() {
         8 * Float32Array.BYTES_PER_ELEMENT,
         0);
 
+    const textureAttributeLocation = gl.getAttribLocation(program, "textCol");
+    gl.vertexAttribPointer(textureAttributeLocation,
+        2, gl.FLOAT, false,
+        8 * Float32Array.BYTES_PER_ELEMENT,
+        3 * Float32Array.BYTES_PER_ELEMENT);
+
     const colorAttributeLocation = gl.getAttribLocation(program, "vertColor");
     gl.vertexAttribPointer(colorAttributeLocation,
         3, gl.FLOAT, false,
@@ -150,6 +155,7 @@ async function init() {
     // draw triangle
     gl.enableVertexAttribArray(positionAttributeLocation);
     gl.enableVertexAttribArray(colorAttributeLocation);
+    gl.enableVertexAttribArray(textureAttributeLocation);
 
     gl.enable(gl.DEPTH_TEST);
 
