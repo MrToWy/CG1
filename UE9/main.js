@@ -65,7 +65,7 @@ async function init() {
     let fragmentRequest = await fetch("fragmentShader.frag");
     let fragmentShaderText = await fragmentRequest.text();
 
-    let teapotRequest = await fetch("cube.obj");
+    let teapotRequest = await fetch("box.obj");
     let teapotText = await teapotRequest.text();
     const triangleVertices = objToVBO(teapotText);
     console.log(triangleVertices);
@@ -75,6 +75,23 @@ async function init() {
     const triangle = document.getElementById("triangle")
     const gl = triangle.getContext("webgl");
 
+    
+    
+    
+    
+    // texture
+    const texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture)
+    
+    const textureImage = document.getElementById("texture")
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, 512, 512, 0, gl.RGB, gl.UNSIGNED_BYTE, textureImage)
+    gl.generateMipmap(gl.TEXTURE_2D)
+
+    gl.bindTexture(gl.TEXTURE_2D, texture)
+    
+    
+    
+    
     const vertexShader = gl.createShader(gl.VERTEX_SHADER);
     gl.shaderSource(vertexShader, vertexShaderText);
     gl.compileShader(vertexShader);
