@@ -68,9 +68,6 @@ async function init() {
     let teapotRequest = await fetch("box.obj");
     let teapotText = await teapotRequest.text();
     const triangleVertices = objToVBO(teapotText);
-    console.log(triangleVertices);
-
-    console.log(await fetchModel("teapot.obj"));
 
     const triangle = document.getElementById("triangle")
     const gl = triangle.getContext("webgl");
