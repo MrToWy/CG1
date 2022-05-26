@@ -75,15 +75,8 @@ async function init() {
     
     
     
-    // texture
-    const texture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, texture)
-    
-    const textureImage = document.getElementById("texture")
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, textureImage)
-    gl.generateMipmap(gl.TEXTURE_2D)
 
-    gl.bindTexture(gl.TEXTURE_2D, texture)
+    
     
     
     
@@ -162,6 +155,16 @@ async function init() {
     function loop() {
         counter -= 1;
 
+        // texture
+        let texture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, texture)
+
+        let textureImage = document.getElementById("texture")
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, textureImage)
+        gl.generateMipmap(gl.TEXTURE_2D)
+
+        gl.bindTexture(gl.TEXTURE_2D, texture)
+
         let matWorldUniformLocation = gl.getUniformLocation(program, 'mWorld');
         let matViewUniformLocation = gl.getUniformLocation(program, 'mView');
         let matProjUniformLocation = gl.getUniformLocation(program, 'mProj');
@@ -201,10 +204,10 @@ async function init() {
 
 
         // texture
-        const texture = gl.createTexture();
+        texture = gl.createTexture();
         gl.bindTexture(gl.TEXTURE_2D, texture)
 
-        const textureImage = document.getElementById("videoTexture")
+        textureImage = document.getElementById("videoTexture")
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, textureImage)
         gl.generateMipmap(gl.TEXTURE_2D)
 
