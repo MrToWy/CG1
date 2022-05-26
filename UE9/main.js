@@ -72,10 +72,19 @@ async function init() {
     const triangle = document.getElementById("triangle")
     const gl = triangle.getContext("webgl");
 
-    
-    
-    
 
+
+
+    // texture
+    let texture = gl.createTexture();
+    gl.activeTexture(gl.TEXTURE0)
+    gl.bindTexture(gl.TEXTURE_2D, texture)
+
+    let textureImage = document.getElementById("texture")
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, textureImage)
+    gl.generateMipmap(gl.TEXTURE_2D)
+
+    gl.bindTexture(gl.TEXTURE_2D, texture)
     
     
     
@@ -149,22 +158,16 @@ async function init() {
 
     gl.enable(gl.DEPTH_TEST);
 
+    const textureSelector = gl.getUniformLocation(program, "textureSelector");
 
     let counter = 0;
 
     function loop() {
         counter -= 1;
 
-        // texture
-        let texture = gl.createTexture();
-        gl.bindTexture(gl.TEXTURE_2D, texture)
-
-        let textureImage = document.getElementById("texture")
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, textureImage)
-        gl.generateMipmap(gl.TEXTURE_2D)
-
-        gl.bindTexture(gl.TEXTURE_2D, texture)
-
+        // select TEXTURE0 as texture
+        gl.uniform1i(textureSelector, 0);
+        
         let matWorldUniformLocation = gl.getUniformLocation(program, 'mWorld');
         let matViewUniformLocation = gl.getUniformLocation(program, 'mView');
         let matProjUniformLocation = gl.getUniformLocation(program, 'mProj');
@@ -202,10 +205,15 @@ async function init() {
         translate(translateMatrix, translateMatrix, [4, 0, 0])
         gl.uniformMatrix4fv(matTranslateUniformLocation, gl.FALSE, translateMatrix);
 
+        
 
         // texture
         texture = gl.createTexture();
+        gl.activeTexture(gl.TEXTURE1)
         gl.bindTexture(gl.TEXTURE_2D, texture)
+        
+        // select TEXTURE1 as texture
+        gl.uniform1i(textureSelector, 1);
 
         textureImage = document.getElementById("videoTexture")
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, textureImage)
