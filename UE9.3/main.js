@@ -78,7 +78,7 @@ async function init() {
     // texture
     let texture = gl.createTexture();
     gl.activeTexture(gl.TEXTURE0)
-    gl.bindTexture(gl.TEXTURE_2D, texture)
+    gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture)
 
     let topImage = document.getElementById("top")
     let bottomImage = document.getElementById("bottom")
@@ -94,9 +94,8 @@ async function init() {
     gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, bottomImage)
     gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, frontImage)
     
-    gl.generateMipmap(gl.TEXTURE_2D)
+    gl.generateMipmap(gl.TEXTURE_CUBE_MAP)
 
-    gl.bindTexture(gl.TEXTURE_2D, texture)
     
     
     
@@ -196,9 +195,9 @@ async function init() {
 
         rotateY(translateMatrix, identityMatrix, counter * Math.PI / 180);
         translate(translateMatrix, translateMatrix, [0, -0.4, 0])
-        scale(translateMatrix, translateMatrix, [1, 1, 1]);
+        scale(translateMatrix, translateMatrix, [100, 100, 100]);
 
-        let eye = [1, 2, 10];
+        let eye = [1, 2, 100];
         lookAt(viewMatrix, eye, [0, 0, 1], [0, 1, 0]);
 
         perspective(projMatrix, 45 * Math.PI / 180, triangle.clientWidth / triangle.clientHeight, 0.1, 1000.0);
@@ -235,7 +234,7 @@ async function init() {
         gl.bindTexture(gl.TEXTURE_2D, texture)
         
         
-        gl.drawArrays(gl.TRIANGLES, 0, triangleVertices.length / 8);
+        // gl.drawArrays(gl.TRIANGLES, 0, triangleVertices.length / 8);
         
         
         

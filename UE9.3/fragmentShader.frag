@@ -8,5 +8,5 @@ uniform samplerCube skybox;
 
 
 void main(){
-    gl_FragColor = textureCube(skybox, vec3(TexCoord, 1.0));
+    gl_FragColor = textureCube(skybox, vec3(TexCoord, 1));
 }
