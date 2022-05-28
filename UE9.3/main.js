@@ -77,7 +77,7 @@ async function init() {
 
     // texture
     let texture = gl.createTexture();
-    gl.activeTexture(gl.TEXTURE0)
+    // gl.activeTexture(gl.TEXTURE0)
     gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture)
 
     let topImage = document.getElementById("top")
@@ -95,6 +95,7 @@ async function init() {
     gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, frontImage)
     
     gl.generateMipmap(gl.TEXTURE_CUBE_MAP)
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
 
     
     
@@ -167,8 +168,10 @@ async function init() {
     gl.enableVertexAttribArray(colorAttributeLocation);
     gl.enableVertexAttribArray(textureAttributeLocation);
 
+    //gl.enable(gl.CULL_FACE);
     gl.enable(gl.DEPTH_TEST);
     gl.depthMask(false);
+    
 
     const textureSelector = gl.getUniformLocation(program, "textureSelector");
 
@@ -195,10 +198,10 @@ async function init() {
 
         rotateY(translateMatrix, identityMatrix, counter * Math.PI / 180);
         translate(translateMatrix, translateMatrix, [0, -0.4, 0])
-        scale(translateMatrix, translateMatrix, [100, 100, 100]);
+        scale(translateMatrix, translateMatrix, [1000, 1000, 1000]);
 
         let eye = [1, 2, 100];
-        lookAt(viewMatrix, eye, [0, 0, 1], [0, 1, 0]);
+        lookAt(viewMatrix, eye, [0, 30, 1], [0, 1, 0]);
 
         perspective(projMatrix, 45 * Math.PI / 180, triangle.clientWidth / triangle.clientHeight, 0.1, 1000.0);
 
