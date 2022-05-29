@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Ein Dreieck</title>
+</head>
+<body>
+
+<h1>UE8</h1>
+
+<canvas width="800" height="600" id="triangle">
+
+</canvas>
+
+<img id="texture" src="crate.png" alt="crate texture for box" width="0">
+<img id="day" src="earth_day.png" alt="crate texture for earth" width="0">
+<img id="night" src="earth_night.png" alt="crate texture for earth" width="0">
+<img id="ocean" src="earth_ocean_mask.png" alt="crate texture for earth" width="0">
+<img id="clouds" src="earth_clouds.png" alt="crate texture for earth" width="0">
+
+<video autoplay loop id="videoTexture" width="320" height="240" controls>
+  <source src="sample.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+
+<script src="matrix.js"></script>
+<script src="gl-matrix.js"></script>
+<script src="obj.js"></script>
+
+<script src="main.js"></script>
+</body>
+</html>

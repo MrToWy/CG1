@@ -72,21 +72,68 @@ async function init() {
     const triangle = document.getElementById("triangle")
     const gl = triangle.getContext("webgl");
 
-
-
-
+    
     // texture
+
+    let topImage = document.getElementById("top")
+    let bottomImage = document.getElementById("bottom")
+    let backImage = document.getElementById("back")
+    let frontImage = document.getElementById("front")
+    let leftImage = document.getElementById("left")
+    let rightImage = document.getElementById("right")
+    
+    const cubeMapFaces = [
+        {
+            target: gl.TEXTURE_CUBE_MAP_POSITIVE_X,
+            img: rightImage,
+        },
+        {
+            target: gl.TEXTURE_CUBE_MAP_POSITIVE_Y,
+            img: topImage,
+        },
+        {
+            target: gl.TEXTURE_CUBE_MAP_POSITIVE_Z,
+            img: frontImage,
+        },
+        {
+            target: gl.TEXTURE_CUBE_MAP_NEGATIVE_X,
+            img: leftImage,
+        },
+        {
+            target: gl.TEXTURE_CUBE_MAP_NEGATIVE_Y,
+            img: bottomImage,
+        },
+        {
+            target: gl.TEXTURE_CUBE_MAP_NEGATIVE_Z,
+            img: backImage,
+        },
+    ];
+    
     let texture = gl.createTexture();
-    gl.activeTexture(gl.TEXTURE0)
-    gl.bindTexture(gl.TEXTURE_2D, texture)
+    // gl.activeTexture(gl.TEXTURE0)
+    gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture)
 
-    let textureImage = document.getElementById("texture")
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, textureImage)
-    gl.generateMipmap(gl.TEXTURE_2D)
 
-    gl.bindTexture(gl.TEXTURE_2D, texture)
+    const level = 0;
+    const internalFormat = gl.RGBA;
+    const format = gl.RGBA;
+    const type = gl.UNSIGNED_BYTE;
+
+    cubeMapFaces.forEach((cubeMapFace) =>{
+        
+        const {target, img} = cubeMapFace;
+
+        // fill with img
+        gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
+        gl.texImage2D(target, level, internalFormat, format, type, img);
+        gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
     
     
+    console.log(target)
+    })    
+    
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+
     
     
     
@@ -151,19 +198,23 @@ async function init() {
         8 * Float32Array.BYTES_PER_ELEMENT,
         5 * Float32Array.BYTES_PER_ELEMENT);
 
+    
     // draw triangle
     gl.enableVertexAttribArray(positionAttributeLocation);
     gl.enableVertexAttribArray(colorAttributeLocation);
     gl.enableVertexAttribArray(textureAttributeLocation);
 
+    //gl.enable(gl.CULL_FACE);
     gl.enable(gl.DEPTH_TEST);
+    gl.depthMask(false);
+    
 
     const textureSelector = gl.getUniformLocation(program, "textureSelector");
 
     let counter = 0;
 
     function loop() {
-        counter -= 1;
+        counter -= 0.3;
 
         // select TEXTURE0 as texture
         gl.uniform1i(textureSelector, 0);
@@ -183,10 +234,10 @@ async function init() {
 
         rotateY(translateMatrix, identityMatrix, counter * Math.PI / 180);
         translate(translateMatrix, translateMatrix, [0, -0.4, 0])
-        scale(translateMatrix, translateMatrix, [1, 1, 1]);
+        scale(translateMatrix, translateMatrix, [1000, 1000, 1000]);
 
-        let eye = [1, 2, 10];
-        lookAt(viewMatrix, eye, [0, 0, 0], [0, 1, 0]);
+        let eye = [1, 0, 200];
+        lookAt(viewMatrix, eye, [0, 30, 1], [0, 1, 0]);
 
         perspective(projMatrix, 45 * Math.PI / 180, triangle.clientWidth / triangle.clientHeight, 0.1, 1000.0);
 
@@ -194,37 +245,10 @@ async function init() {
         gl.uniformMatrix4fv(matViewUniformLocation, gl.FALSE, viewMatrix);
         gl.uniformMatrix4fv(matProjUniformLocation, gl.FALSE, projMatrix);
         gl.uniformMatrix4fv(matTranslateUniformLocation, gl.FALSE, translateMatrix);
-
-
-        gl.drawArrays(gl.TRIANGLES, 0, triangleVertices.length / 8);
-
-        
-        
-        // second cube
-    
-        translate(translateMatrix, translateMatrix, [4, 0, 0])
-        gl.uniformMatrix4fv(matTranslateUniformLocation, gl.FALSE, translateMatrix);
-
-        
-
-        // texture
-        texture = gl.createTexture();
-        gl.activeTexture(gl.TEXTURE1)
-        gl.bindTexture(gl.TEXTURE_2D, texture)
-        
-        // select TEXTURE1 as texture
-        gl.uniform1i(textureSelector, 1);
-
-        textureImage = document.getElementById("videoTexture")
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, textureImage)
-        gl.generateMipmap(gl.TEXTURE_2D)
-
-        gl.bindTexture(gl.TEXTURE_2D, texture)
         
         
         gl.drawArrays(gl.TRIANGLES, 0, triangleVertices.length / 8);
-        
-        
+
         
         requestAnimationFrame(loop);
     }

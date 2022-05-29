@@ -65,7 +65,7 @@ async function init() {
     let fragmentRequest = await fetch("fragmentShader.frag");
     let fragmentShaderText = await fragmentRequest.text();
 
-    let teapotRequest = await fetch("box.obj");
+    let teapotRequest = await fetch("earth.obj");
     let teapotText = await teapotRequest.text();
     const triangleVertices = objToVBO(teapotText);
 
@@ -80,7 +80,7 @@ async function init() {
     gl.activeTexture(gl.TEXTURE0)
     gl.bindTexture(gl.TEXTURE_2D, texture)
 
-    let textureImage = document.getElementById("texture")
+    let textureImage = document.getElementById("clouds")
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, textureImage)
     gl.generateMipmap(gl.TEXTURE_2D)
 
@@ -183,7 +183,7 @@ async function init() {
 
         rotateY(translateMatrix, identityMatrix, counter * Math.PI / 180);
         translate(translateMatrix, translateMatrix, [0, -0.4, 0])
-        scale(translateMatrix, translateMatrix, [1, 1, 1]);
+        scale(translateMatrix, translateMatrix, [1, -1, 1]);
 
         let eye = [1, 2, 10];
         lookAt(viewMatrix, eye, [0, 0, 0], [0, 1, 0]);
