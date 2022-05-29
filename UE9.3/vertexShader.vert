@@ -10,11 +10,15 @@ uniform mat4 mProj;
 uniform mat4 mTranslate;
 
 varying vec3 fragColor;
-varying vec2 TexCoord;
+varying vec3 TexCoord;
 uniform sampler2D ourTexture;
 
+varying vec4 v_position;
+
 void main(){
-    TexCoord = textCol;
+    v_position = vec4(vertPosition, 1.0);
+
+    TexCoord = vertPosition;
     fragColor = vertColor;
     gl_Position = mProj * mView *   mTranslate * mWorld * vec4(vertPosition, 1.0);
 }
