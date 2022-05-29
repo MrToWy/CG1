@@ -58,19 +58,91 @@ function objToVBO(objString) {
 
 async function init() {
 
+    const canvas = document.getElementById("canvas")
+    const gl = canvas.getContext("webgl");
+    
 
-    let vertextRequest = await fetch("vertexShader.vert");
+    // teapot
+    let teapotVertextRequest = await fetch("teapotVertexShader.vert");
+    let teapotVertexShaderText = await teapotVertextRequest.text();
+
+    let teapotFragmentRequest = await fetch("teapotFragmentShader.frag");
+    let teapotFragmentShaderText = await teapotFragmentRequest.text();
+
+    let teapotRequest = await fetch("teapot.obj");
+    let teapotText = await teapotRequest.text();
+    const teapotVertices = objToVBO(teapotText);
+
+    const teapotVertexShader = gl.createShader(gl.VERTEX_SHADER);
+    gl.shaderSource(teapotVertexShader, teapotVertexShaderText);
+    gl.compileShader(teapotVertexShader);
+
+    const teapotFragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+    gl.shaderSource(teapotFragmentShader, teapotFragmentShaderText);
+    gl.compileShader(teapotFragmentShader);
+    // TODO: Check compile status
+    if (!gl.getShaderParameter(teapotVertexShader, gl.COMPILE_STATUS)) {
+        console.error('ERROR', gl.getShaderInfoLog(teapotVertexShader));
+        return;
+    }
+
+    if (!gl.getShaderParameter(teapotFragmentShader, gl.COMPILE_STATUS)) {
+        console.error('ERROR', gl.getShaderInfoLog(teapotFragmentShader));
+        return;
+    }
+
+    const teapotProgram = gl.createProgram();
+    gl.attachShader(teapotProgram, teapotVertexShader);
+    gl.attachShader(teapotProgram, teapotFragmentShader);
+    gl.linkProgram(teapotProgram);
+
+    gl.validateProgram(teapotProgram);
+
+    if (!gl.getProgramParameter(teapotProgram, gl.VALIDATE_STATUS)) {
+        console.error('ERROR', gl.getProgramInfoLog(teapotProgram));
+        return;
+    }
+
+    const teapotVBO = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, teapotVBO);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(teapotVertices),
+        gl.STATIC_DRAW);
+    gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.useProgram(teapotProgram);
+    gl.bindBuffer(gl.ARRAY_BUFFER, teapotVBO);
+
+
+    const teapotPositionAttributeLocation = gl.getAttribLocation(teapotProgram, "vertPosition");
+    gl.vertexAttribPointer(teapotPositionAttributeLocation,
+        3, gl.FLOAT, false,
+        8 * Float32Array.BYTES_PER_ELEMENT,
+        0);
+
+    const teapotColorAttributeLocation = gl.getAttribLocation(teapotProgram, "vertColor");
+    gl.vertexAttribPointer(teapotColorAttributeLocation,
+        3, gl.FLOAT, false,
+        8 * Float32Array.BYTES_PER_ELEMENT,
+        5 * Float32Array.BYTES_PER_ELEMENT);
+
+
+    gl.enableVertexAttribArray(teapotPositionAttributeLocation);
+    gl.enableVertexAttribArray(teapotColorAttributeLocation);
+
+    
+    // skybox
+    let vertextRequest = await fetch("skyboxVertexShader.vert");
     let vertexShaderText = await vertextRequest.text();
 
-    let fragmentRequest = await fetch("fragmentShader.frag");
+    let fragmentRequest = await fetch("skyboxFragmentShader.frag");
     let fragmentShaderText = await fragmentRequest.text();
 
-    let teapotRequest = await fetch("box.obj");
-    let teapotText = await teapotRequest.text();
-    const triangleVertices = objToVBO(teapotText);
+    let boxRequest = await fetch("box.obj");
+    let boxText = await boxRequest.text();
+    const boxVertices = objToVBO(boxText);
 
-    const triangle = document.getElementById("triangle")
-    const gl = triangle.getContext("webgl");
+    
 
     
     // texture
@@ -170,15 +242,15 @@ async function init() {
     gl.clearColor(0.0, 1.0, 0.0, 1);
 
 
-    const triangleVBO = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, triangleVBO);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(triangleVertices),
+    const boxVBO = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, boxVBO);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(boxVertices),
         gl.STATIC_DRAW);
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.useProgram(program);
-    gl.bindBuffer(gl.ARRAY_BUFFER, triangleVBO);
+    gl.bindBuffer(gl.ARRAY_BUFFER, boxVBO);
 
     const positionAttributeLocation = gl.getAttribLocation(program, "vertPosition");
     gl.vertexAttribPointer(positionAttributeLocation,
@@ -186,27 +258,12 @@ async function init() {
         8 * Float32Array.BYTES_PER_ELEMENT,
         0);
 
-    const textureAttributeLocation = gl.getAttribLocation(program, "textCol");
-    gl.vertexAttribPointer(textureAttributeLocation,
-        2, gl.FLOAT, false,
-        8 * Float32Array.BYTES_PER_ELEMENT,
-        3 * Float32Array.BYTES_PER_ELEMENT);
-
-    const colorAttributeLocation = gl.getAttribLocation(program, "vertColor");
-    gl.vertexAttribPointer(colorAttributeLocation,
-        3, gl.FLOAT, false,
-        8 * Float32Array.BYTES_PER_ELEMENT,
-        5 * Float32Array.BYTES_PER_ELEMENT);
-
-    
     // draw triangle
     gl.enableVertexAttribArray(positionAttributeLocation);
-    gl.enableVertexAttribArray(colorAttributeLocation);
-    gl.enableVertexAttribArray(textureAttributeLocation);
 
     //gl.enable(gl.CULL_FACE);
     gl.enable(gl.DEPTH_TEST);
-    gl.depthMask(false);
+    //gl.depthMask(false);
     
 
     const textureSelector = gl.getUniformLocation(program, "textureSelector");
@@ -214,6 +271,8 @@ async function init() {
     let counter = 0;
 
     function loop() {
+        gl.useProgram(program);
+        
         counter -= 0.3;
 
         // select TEXTURE0 as texture
@@ -236,19 +295,40 @@ async function init() {
         translate(translateMatrix, translateMatrix, [0, -0.4, 0])
         scale(translateMatrix, translateMatrix, [1000, 1000, 1000]);
 
-        let eye = [1, 0, 200];
-        lookAt(viewMatrix, eye, [0, 30, 1], [0, 1, 0]);
+        let eye = [1, 2, 10];
+        lookAt(viewMatrix, eye, [0, 0, 0], [0, 1, 0]);
 
-        perspective(projMatrix, 45 * Math.PI / 180, triangle.clientWidth / triangle.clientHeight, 0.1, 1000.0);
+        perspective(projMatrix, 45 * Math.PI / 180, canvas.clientWidth / canvas.clientHeight, 0.1, 1000.0);
 
         gl.uniformMatrix4fv(matWorldUniformLocation, gl.FALSE, worldMatrix);
         gl.uniformMatrix4fv(matViewUniformLocation, gl.FALSE, viewMatrix);
         gl.uniformMatrix4fv(matProjUniformLocation, gl.FALSE, projMatrix);
         gl.uniformMatrix4fv(matTranslateUniformLocation, gl.FALSE, translateMatrix);
-        
-        
-        gl.drawArrays(gl.TRIANGLES, 0, triangleVertices.length / 8);
 
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(boxVertices),
+            gl.STATIC_DRAW);
+        gl.drawArrays(gl.TRIANGLES, 0, boxVertices.length / 8);
+
+        
+        // teapot
+        translateMatrix = new glMatrix.mat4.create();
+        rotateY(translateMatrix, identityMatrix, counter * Math.PI / 180);
+        translate(translateMatrix, translateMatrix, [0, -0.4, 0])
+        
+        gl.useProgram(teapotProgram);
+        let teapotMatWorldUniformLocation = gl.getUniformLocation(teapotProgram, 'mWorld');
+        let teapotMatViewUniformLocation = gl.getUniformLocation(teapotProgram, 'mView');
+        let teapotMatProjUniformLocation = gl.getUniformLocation(teapotProgram, 'mProj');
+        let teapotMatTranslateUniformLocation = gl.getUniformLocation(teapotProgram, 'mTranslate');
+
+        gl.uniformMatrix4fv(teapotMatWorldUniformLocation, gl.FALSE, worldMatrix);
+        gl.uniformMatrix4fv(teapotMatViewUniformLocation, gl.FALSE, viewMatrix);
+        gl.uniformMatrix4fv(teapotMatProjUniformLocation, gl.FALSE, projMatrix);
+        gl.uniformMatrix4fv(teapotMatTranslateUniformLocation, gl.FALSE, translateMatrix);
+        
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(teapotVertices),
+            gl.STATIC_DRAW);
+        gl.drawArrays(gl.TRIANGLES, 0, teapotVertices.length / 8);
         
         requestAnimationFrame(loop);
     }
