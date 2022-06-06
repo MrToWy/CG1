@@ -118,23 +118,50 @@ async function init() {
     gl.useProgram(program);
     gl.bindBuffer(gl.ARRAY_BUFFER, triangleVBO);
 
-    const positionAttributeLocation = gl.getAttribLocation(program, "vertPosition");
+    const positionAttributeLocation = gl.getUniformLocation(program, "vertPosition");
     gl.vertexAttribPointer(positionAttributeLocation,
         3, gl.FLOAT, false,
         8 * Float32Array.BYTES_PER_ELEMENT,
         0);
 
-    const colorAttributeLocation = gl.getAttribLocation(program, "vertColor");
-    gl.vertexAttribPointer(colorAttributeLocation,
+    const normalsAttributeLocation = gl.getUniformLocation(program, "vertNormals");
+    gl.vertexAttribPointer(normalsAttributeLocation,
         3, gl.FLOAT, false,
         8 * Float32Array.BYTES_PER_ELEMENT,
         5 * Float32Array.BYTES_PER_ELEMENT);
 
-    // draw triangle
     gl.enableVertexAttribArray(positionAttributeLocation);
-    gl.enableVertexAttribArray(colorAttributeLocation);
+    gl.enableVertexAttribArray(normalsAttributeLocation);
+
+    
 
     gl.enable(gl.DEPTH_TEST);
+    
+    // set material properties
+    const matEmissionSelector = gl.getUniformLocation(program, "matEmission");
+    const matAmbientSelector = gl.getUniformLocation(program, "matAmbient");
+    const matDiffuseSelector = gl.getUniformLocation(program, "matDiffuse");
+    const matSpecularSelector = gl.getUniformLocation(program, "matSpecular");
+    const matShininess = gl.getUniformLocation(program, "matShininessSelector");
+
+    const lightPosition = gl.getUniformLocation(program, "lightPositionSelector");
+    const lightAmbient = gl.getUniformLocation(program, "lightAmbientSelector");
+    const lightDiffuseSelector = gl.getUniformLocation(program, "lightDiffuse");
+    const lightSpecularSelector = gl.getUniformLocation(program, "lightSpecular");
+    const lightHalfVectorSelector = gl.getUniformLocation(program, "lightHalfVector");
+    
+    
+    gl.uniform1i(textureSelector, 1);
+    gl.uniform1i(textureSelector, 1);
+    gl.uniform1i(textureSelector, 1);
+    gl.uniform1i(textureSelector, 1);
+    gl.uniform1i(textureSelector, 1);
+
+    gl.uniform1i(textureSelector, 1);
+    gl.uniform1i(textureSelector, 1);
+    gl.uniform1i(textureSelector, 1);
+    gl.uniform1i(textureSelector, 1);
+    gl.uniform1i(textureSelector, 1);
 
 
     let counter = 0;

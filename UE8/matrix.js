@@ -212,7 +212,6 @@ function lookAt(out, eye, center, up){
     // n x up
     let u = [];
     kreuzprodukt(u, up, n);
-    console.log(u);
     let u_betrag = Math.hypot(u[0], u[1], u[2]);
     
     // n x u

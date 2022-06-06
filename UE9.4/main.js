@@ -1,59 +1,39 @@
 'use strict';
 
-function objToVBO(objString) {
+const skyboxPath = "skybox/"
+const teapotPath = "teapot/"
 
-    let objArray = objString.split("\n");
-    let v = [];
-    let vt = [];
-    let vn = [];
-    let vbo = [];
+async function getShader(shaderPath, glContext){
+    let response = await fetch(shaderPath);
+    let shaderText = await response.text();
 
-    for (let i = 0; i < objArray.length; i++) {
-        let line = objArray[i];
+    const shader = glContext.createShader(shaderPath.includes(".vert") ? glContext.VERTEX_SHADER : glContext.FRAGMENT_SHADER);
+    glContext.shaderSource(shader, shaderText);
+    glContext.compileShader(shader);
 
-        let columns = line.split(" ");
-        let prefix = columns[0];
+    if (!glContext.getShaderParameter(shader, glContext.COMPILE_STATUS)) 
+        console.error('ERROR', glContext.getShaderInfoLog(shader));
 
-        if (prefix === "v") {
-            let x = parseFloat(columns[1]);
-            let y = parseFloat(columns[2]);
-            let z = parseFloat(columns[3]);
+    
+    return shader;
+}
 
-            v.push([x, y, z]);
-        } else if (prefix === "vt") {
-            let x = parseFloat(columns[1]);
-            let y = parseFloat(columns[2]);
+async function getProgram(shaderPaths, glContext){
 
-            vt.push([x, y]);
-        } else if (prefix === "vn") {
-            let x = parseFloat(columns[1]);
-            let y = parseFloat(columns[2]);
-            let z = parseFloat(columns[3]);
+    const program = glContext.createProgram();
 
-            vn.push([x, y, z]);
-        } else if (prefix === "f") {
+    for (const shaderPath of shaderPaths) 
+        glContext.attachShader(program, await getShader(shaderPath, glContext));
+    
+    
+    glContext.linkProgram(program);
+    glContext.validateProgram(program);
 
-            for (let j = 1; j < 4; j++) {
-                let triplet = columns[j].split("/");
-
-                let verticesIndex = triplet[0] - 1;
-                let texturesIndex = triplet[1] - 1;
-                let normalIndex = triplet[2] - 1;
-
-                // push vertices
-                vbo.push(v[verticesIndex][0], v[verticesIndex][1], v[verticesIndex][2]);
-
-                // push textures
-                vbo.push(vt[texturesIndex][0], vt[texturesIndex][1]);
-
-                // push normals
-                vbo.push(vn[normalIndex][0], vn[normalIndex][1], vn[normalIndex][2]);
-            }
-        }
-
-    }
-
-    return vbo;
+    if (!glContext.getProgramParameter(program, glContext.VALIDATE_STATUS)) 
+        console.error('ERROR', glContext.getProgramInfoLog(program));
+    
+    
+    return program;
 }
 
 async function init() {
@@ -61,47 +41,14 @@ async function init() {
     const canvas = document.getElementById("canvas")
     const gl = canvas.getContext("webgl");
     
+    // compile programs
+    const teapotProgram = await getProgram([teapotPath + "teapotFragmentShader.frag", teapotPath + "teapotVertexShader.vert"], gl)
+    const skyboxProgram = await getProgram([skyboxPath + "skyboxFragmentShader.frag", skyboxPath + "skyboxVertexShader.vert"], gl)
 
-    // teapot
-    let teapotVertextRequest = await fetch("teapotVertexShader.vert");
-    let teapotVertexShaderText = await teapotVertextRequest.text();
 
-    let teapotFragmentRequest = await fetch("teapotFragmentShader.frag");
-    let teapotFragmentShaderText = await teapotFragmentRequest.text();
-
-    let teapotRequest = await fetch("teapot.obj");
+    let teapotRequest = await fetch(teapotPath + "teapot.obj");
     let teapotText = await teapotRequest.text();
     const teapotVertices = objToVBO(teapotText);
-
-    const teapotVertexShader = gl.createShader(gl.VERTEX_SHADER);
-    gl.shaderSource(teapotVertexShader, teapotVertexShaderText);
-    gl.compileShader(teapotVertexShader);
-
-    const teapotFragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
-    gl.shaderSource(teapotFragmentShader, teapotFragmentShaderText);
-    gl.compileShader(teapotFragmentShader);
-    // TODO: Check compile status
-    if (!gl.getShaderParameter(teapotVertexShader, gl.COMPILE_STATUS)) {
-        console.error('ERROR', gl.getShaderInfoLog(teapotVertexShader));
-        return;
-    }
-
-    if (!gl.getShaderParameter(teapotFragmentShader, gl.COMPILE_STATUS)) {
-        console.error('ERROR', gl.getShaderInfoLog(teapotFragmentShader));
-        return;
-    }
-
-    const teapotProgram = gl.createProgram();
-    gl.attachShader(teapotProgram, teapotVertexShader);
-    gl.attachShader(teapotProgram, teapotFragmentShader);
-    gl.linkProgram(teapotProgram);
-
-    gl.validateProgram(teapotProgram);
-
-    if (!gl.getProgramParameter(teapotProgram, gl.VALIDATE_STATUS)) {
-        console.error('ERROR', gl.getProgramInfoLog(teapotProgram));
-        return;
-    }
 
     const teapotVBO = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, teapotVBO);
@@ -132,13 +79,7 @@ async function init() {
 
     
     // skybox
-    let vertextRequest = await fetch("skyboxVertexShader.vert");
-    let vertexShaderText = await vertextRequest.text();
-
-    let fragmentRequest = await fetch("skyboxFragmentShader.frag");
-    let fragmentShaderText = await fragmentRequest.text();
-
-    let boxRequest = await fetch("box.obj");
+    let boxRequest = await fetch(skyboxPath + "box.obj");
     let boxText = await boxRequest.text();
     const boxVertices = objToVBO(boxText);
 
@@ -146,7 +87,6 @@ async function init() {
 
     
     // texture
-
     let topImage = document.getElementById("top")
     let bottomImage = document.getElementById("bottom")
     let backImage = document.getElementById("back")
@@ -206,38 +146,9 @@ async function init() {
     
     gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
 
-    
-    
-    
-    const vertexShader = gl.createShader(gl.VERTEX_SHADER);
-    gl.shaderSource(vertexShader, vertexShaderText);
-    gl.compileShader(vertexShader);
 
-    const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
-    gl.shaderSource(fragmentShader, fragmentShaderText);
-    gl.compileShader(fragmentShader);
-    // TODO: Check compile status
-    if (!gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS)) {
-        console.error('ERROR', gl.getShaderInfoLog(vertexShader));
-        return;
-    }
 
-    if (!gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS)) {
-        console.error('ERROR', gl.getShaderInfoLog(fragmentShader));
-        return;
-    }
 
-    const program = gl.createProgram();
-    gl.attachShader(program, vertexShader);
-    gl.attachShader(program, fragmentShader);
-    gl.linkProgram(program);
-
-    gl.validateProgram(program);
-
-    if (!gl.getProgramParameter(program, gl.VALIDATE_STATUS)) {
-        console.error('ERROR', gl.getProgramInfoLog(program));
-        return;
-    }
 
     gl.clearColor(0.0, 1.0, 0.0, 1);
 
@@ -249,10 +160,10 @@ async function init() {
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
     gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.useProgram(program);
+    gl.useProgram(skyboxProgram);
     gl.bindBuffer(gl.ARRAY_BUFFER, boxVBO);
 
-    const positionAttributeLocation = gl.getAttribLocation(program, "vertPosition");
+    const positionAttributeLocation = gl.getAttribLocation(skyboxProgram, "vertPosition");
     gl.vertexAttribPointer(positionAttributeLocation,
         3, gl.FLOAT, false,
         8 * Float32Array.BYTES_PER_ELEMENT,
@@ -266,22 +177,22 @@ async function init() {
     //gl.depthMask(false);
     
 
-    const textureSelector = gl.getUniformLocation(program, "textureSelector");
+    const textureSelector = gl.getUniformLocation(skyboxProgram, "textureSelector");
 
     let counter = 0;
 
     function loop() {
-        gl.useProgram(program);
+        gl.useProgram(skyboxProgram);
         
         counter -= 0.3;
 
         // select TEXTURE0 as texture
         gl.uniform1i(textureSelector, 0);
         
-        let matWorldUniformLocation = gl.getUniformLocation(program, 'mWorld');
-        let matViewUniformLocation = gl.getUniformLocation(program, 'mView');
-        let matProjUniformLocation = gl.getUniformLocation(program, 'mProj');
-        let matTranslateUniformLocation = gl.getUniformLocation(program, 'mTranslate');
+        let matWorldUniformLocation = gl.getUniformLocation(skyboxProgram, 'mWorld');
+        let matViewUniformLocation = gl.getUniformLocation(skyboxProgram, 'mView');
+        let matProjUniformLocation = gl.getUniformLocation(skyboxProgram, 'mProj');
+        let matTranslateUniformLocation = gl.getUniformLocation(skyboxProgram, 'mTranslate');
 
         let identityMatrix = new glMatrix.mat4.create();
         let worldMatrix = new glMatrix.mat4.create();
