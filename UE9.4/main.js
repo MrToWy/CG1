@@ -13,7 +13,6 @@ async function getShader(shaderPath, glContext){
 
     if (!glContext.getShaderParameter(shader, glContext.COMPILE_STATUS)) 
         console.error('ERROR', glContext.getShaderInfoLog(shader));
-
     
     return shader;
 }
@@ -32,20 +31,10 @@ async function getProgram(shaderPaths, glContext){
     if (!glContext.getProgramParameter(program, glContext.VALIDATE_STATUS)) 
         console.error('ERROR', glContext.getProgramInfoLog(program));
     
-    
     return program;
 }
 
-async function init() {
-
-    const canvas = document.getElementById("canvas")
-    const gl = canvas.getContext("webgl");
-    
-    // compile programs
-    const teapotProgram = await getProgram([teapotPath + "teapotFragmentShader.frag", teapotPath + "teapotVertexShader.vert"], gl)
-    const skyboxProgram = await getProgram([skyboxPath + "skyboxFragmentShader.frag", skyboxPath + "skyboxVertexShader.vert"], gl)
-
-
+async function drawTeapot(gl, teapotProgram){
     let teapotRequest = await fetch(teapotPath + "teapot.obj");
     let teapotText = await teapotRequest.text();
     const teapotVertices = objToVBO(teapotText);
@@ -59,23 +48,70 @@ async function init() {
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.useProgram(teapotProgram);
     gl.bindBuffer(gl.ARRAY_BUFFER, teapotVBO);
+    
+    await bindParameters(gl, teapotProgram)
+    
+    return teapotVertices;
+}
 
-
-    const teapotPositionAttributeLocation = gl.getAttribLocation(teapotProgram, "vertPosition");
+async function bindParameters(gl, program){
+    const teapotPositionAttributeLocation = gl.getAttribLocation(program, "vertPosition");
     gl.vertexAttribPointer(teapotPositionAttributeLocation,
         3, gl.FLOAT, false,
         8 * Float32Array.BYTES_PER_ELEMENT,
         0);
 
-    const teapotColorAttributeLocation = gl.getAttribLocation(teapotProgram, "vertColor");
+    const teapotColorAttributeLocation = gl.getAttribLocation(program, "vertColor");
     gl.vertexAttribPointer(teapotColorAttributeLocation,
         3, gl.FLOAT, false,
         8 * Float32Array.BYTES_PER_ELEMENT,
         5 * Float32Array.BYTES_PER_ELEMENT);
 
-
     gl.enableVertexAttribArray(teapotPositionAttributeLocation);
     gl.enableVertexAttribArray(teapotColorAttributeLocation);
+}
+
+async function place(gl, program, rotationAngle, translateVector3, scaleVector3){
+    let matWorldUniformLocation = gl.getUniformLocation(program, 'mWorld');
+    let matViewUniformLocation = gl.getUniformLocation(program, 'mView');
+    let matProjUniformLocation = gl.getUniformLocation(program, 'mProj');
+    let matTranslateUniformLocation = gl.getUniformLocation(program, 'mTranslate');
+
+    let identityMatrix = new glMatrix.mat4.create();
+    let worldMatrix = new glMatrix.mat4.create();
+    let viewMatrix = new glMatrix.mat4.create();
+    let projMatrix = new glMatrix.mat4.create();
+    let translateMatrix = new glMatrix.mat4.create();
+
+    identity(identityMatrix);
+
+    rotateY(translateMatrix, identityMatrix, rotationAngle * Math.PI / 180);
+    translate(translateMatrix, translateMatrix, [0, -0.4, 0])
+    scale(translateMatrix, translateMatrix, [1000, 1000, 1000]);
+
+    let eye = [1, 2, 10];
+    lookAt(viewMatrix, eye, [0, 0, 0], [0, 1, 0]);
+
+    perspective(projMatrix, 45 * Math.PI / 180, canvas.clientWidth / canvas.clientHeight, 0.1, 1000.0);
+
+    gl.uniformMatrix4fv(matWorldUniformLocation, gl.FALSE, worldMatrix);
+    gl.uniformMatrix4fv(matViewUniformLocation, gl.FALSE, viewMatrix);
+    gl.uniformMatrix4fv(matProjUniformLocation, gl.FALSE, projMatrix);
+    gl.uniformMatrix4fv(matTranslateUniformLocation, gl.FALSE, translateMatrix);
+    
+    return {translate: translateMatrix, identity: identityMatrix, world: worldMatrix, proj:projMatrix, view:viewMatrix}
+}
+
+async function init() {
+
+    const canvas = document.getElementById("canvas")
+    const gl = canvas.getContext("webgl");
+    
+    // compile programs
+    const teapotProgram = await getProgram([teapotPath + "teapotFragmentShader.frag", teapotPath + "teapotVertexShader.vert"], gl)
+    const skyboxProgram = await getProgram([skyboxPath + "skyboxFragmentShader.frag", skyboxPath + "skyboxVertexShader.vert"], gl)
+
+    const teapotVertices = await drawTeapot(gl, teapotProgram)
 
     
     // skybox
@@ -83,9 +119,6 @@ async function init() {
     let boxText = await boxRequest.text();
     const boxVertices = objToVBO(boxText);
 
-    
-
-    
     // texture
     let topImage = document.getElementById("top")
     let bottomImage = document.getElementById("bottom")
@@ -122,7 +155,6 @@ async function init() {
     ];
     
     let texture = gl.createTexture();
-    // gl.activeTexture(gl.TEXTURE0)
     gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture)
 
 
@@ -139,18 +171,9 @@ async function init() {
         gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
         gl.texImage2D(target, level, internalFormat, format, type, img);
         gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
-    
-    
-    console.log(target)
     })    
     
     gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-
-
-
-
-
-    gl.clearColor(0.0, 1.0, 0.0, 1);
 
 
     const boxVBO = gl.createBuffer();
@@ -171,17 +194,13 @@ async function init() {
 
     // draw triangle
     gl.enableVertexAttribArray(positionAttributeLocation);
-
-    //gl.enable(gl.CULL_FACE);
     gl.enable(gl.DEPTH_TEST);
-    //gl.depthMask(false);
-    
 
     const textureSelector = gl.getUniformLocation(skyboxProgram, "textureSelector");
 
     let counter = 0;
 
-    function loop() {
+    async function loop() {
         gl.useProgram(skyboxProgram);
         
         counter -= 0.3;
@@ -189,32 +208,11 @@ async function init() {
         // select TEXTURE0 as texture
         gl.uniform1i(textureSelector, 0);
         
-        let matWorldUniformLocation = gl.getUniformLocation(skyboxProgram, 'mWorld');
-        let matViewUniformLocation = gl.getUniformLocation(skyboxProgram, 'mView');
-        let matProjUniformLocation = gl.getUniformLocation(skyboxProgram, 'mProj');
-        let matTranslateUniformLocation = gl.getUniformLocation(skyboxProgram, 'mTranslate');
-
-        let identityMatrix = new glMatrix.mat4.create();
-        let worldMatrix = new glMatrix.mat4.create();
-        let viewMatrix = new glMatrix.mat4.create();
-        let projMatrix = new glMatrix.mat4.create();
-        let translateMatrix = new glMatrix.mat4.create();
-
-        identity(identityMatrix);
-
-        rotateY(translateMatrix, identityMatrix, counter * Math.PI / 180);
-        translate(translateMatrix, translateMatrix, [0, -0.4, 0])
-        scale(translateMatrix, translateMatrix, [1000, 1000, 1000]);
-
-        let eye = [1, 2, 10];
-        lookAt(viewMatrix, eye, [0, 0, 0], [0, 1, 0]);
-
-        perspective(projMatrix, 45 * Math.PI / 180, canvas.clientWidth / canvas.clientHeight, 0.1, 1000.0);
-
-        gl.uniformMatrix4fv(matWorldUniformLocation, gl.FALSE, worldMatrix);
-        gl.uniformMatrix4fv(matViewUniformLocation, gl.FALSE, viewMatrix);
-        gl.uniformMatrix4fv(matProjUniformLocation, gl.FALSE, projMatrix);
-        gl.uniformMatrix4fv(matTranslateUniformLocation, gl.FALSE, translateMatrix);
+        let placeObj = await place(gl, skyboxProgram, counter)
+        let worldMatrix = placeObj.world
+        let projMatrix = placeObj.proj
+        let identityMatrix = placeObj.identity
+        let viewMatrix = placeObj.view
 
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(boxVertices),
             gl.STATIC_DRAW);
@@ -222,7 +220,7 @@ async function init() {
 
         
         // teapot
-        translateMatrix = new glMatrix.mat4.create();
+        let translateMatrix = new glMatrix.mat4.create();
         rotateY(translateMatrix, identityMatrix, counter * Math.PI / 180);
         translate(translateMatrix, translateMatrix, [0, -0.4, 0])
         
