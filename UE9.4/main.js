@@ -6,9 +6,11 @@ const teapotPath = "teapot/"
 let tolerance = 0.01;
 let updateId;
 let previousDelta = 0;
-let fpsLimit = 10;
+let fpsLimit = 30;
 
 const fpsLabel = document.getElementById("fps");
+const canvas = document.getElementById("canvas")
+const gl = canvas.getContext("webgl");
 
 
 async function getShader(shaderPath, glContext){
@@ -42,7 +44,13 @@ async function getProgram(shaderPaths, glContext){
     return program;
 }
 
-async function drawTeapot(gl, teapotProgram){
+async function getBoxVertices(){
+    let boxRequest = await fetch(skyboxPath + "box.obj");
+    let boxText = await boxRequest.text();
+    return objToVBO(boxText);
+}
+
+async function getTeapotVertices(gl, teapotProgram){
     let teapotRequest = await fetch(teapotPath + "teapot.obj");
     let teapotText = await teapotRequest.text();
     const teapotVertices = objToVBO(teapotText);
@@ -129,22 +137,15 @@ async function position(gl, program, rotationAngle, translateVector3, scaleVecto
 }
 
 async function init() {
-
-    const canvas = document.getElementById("canvas")
-    const gl = canvas.getContext("webgl");
     
     // compile programs
     const teapotProgram = await getProgram([teapotPath + "teapotFragmentShader.frag", teapotPath + "teapotVertexShader.vert"], gl)
     const skyboxProgram = await getProgram([skyboxPath + "skyboxFragmentShader.frag", skyboxPath + "skyboxVertexShader.vert"], gl)
 
-    const teapotVertices = await drawTeapot(gl, teapotProgram)
-
+    // get vertices
+    const teapotVertices = await getTeapotVertices(gl, teapotProgram)
+    const boxVertices = await getBoxVertices();
     
-    // skybox
-    let boxRequest = await fetch(skyboxPath + "box.obj");
-    let boxText = await boxRequest.text();
-    const boxVertices = objToVBO(boxText);
-
     // texture
     let topImage = document.getElementById("top")
     let bottomImage = document.getElementById("bottom")
@@ -201,31 +202,10 @@ async function init() {
     
     gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
 
-
-    const boxVBO = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, boxVBO);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(boxVertices),
-        gl.STATIC_DRAW);
-    gl.bindBuffer(gl.ARRAY_BUFFER, null);
-
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.useProgram(skyboxProgram);
-    gl.bindBuffer(gl.ARRAY_BUFFER, boxVBO);
-
-    const positionAttributeLocation = gl.getAttribLocation(skyboxProgram, "vertPosition");
-    gl.vertexAttribPointer(positionAttributeLocation,
-        3, gl.FLOAT, false,
-        8 * Float32Array.BYTES_PER_ELEMENT,
-        0);
-
-    // draw triangle
-    gl.enableVertexAttribArray(positionAttributeLocation);
     gl.enable(gl.DEPTH_TEST);
 
-    const textureSelector = gl.getUniformLocation(skyboxProgram, "textureSelector");
 
     let counter = 0;
-    let then = 0;
 
     async function loop(currentDelta) {
         
@@ -233,21 +213,18 @@ async function init() {
             return;
         }
         
-
         counter -= 0.3;
         
+        // skybox
         gl.useProgram(skyboxProgram);
         await position(gl, skyboxProgram, counter, [0, 0, 0], [100, 100, 100], canvas)
         await draw(gl, boxVertices)
         
-
         
         // teapot
         gl.useProgram(teapotProgram);
         await position(gl, teapotProgram, counter, [0, -0.4, 0], [1, 1, 1], canvas)
         await draw(gl, teapotVertices)
-
-        
     }
 
     requestAnimationFrame(loop);
