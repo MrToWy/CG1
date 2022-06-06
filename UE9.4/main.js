@@ -6,7 +6,10 @@ const teapotPath = "teapot/"
 let tolerance = 0.01;
 let updateId;
 let previousDelta = 0;
-let fpsLimit = 24;
+let fpsLimit = 10;
+
+const fpsLabel = document.getElementById("fps");
+
 
 async function getShader(shaderPath, glContext){
     let response = await fetch(shaderPath);
@@ -76,11 +79,35 @@ async function bindParameters(gl, program){
     gl.enableVertexAttribArray(teapotColorAttributeLocation);
 }
 
-async function place(gl, program, rotationAngle, translateVector3, scaleVector3){
-    let matWorldUniformLocation = gl.getUniformLocation(program, 'mWorld');
-    let matViewUniformLocation = gl.getUniformLocation(program, 'mView');
-    let matProjUniformLocation = gl.getUniformLocation(program, 'mProj');
-    let matTranslateUniformLocation = gl.getUniformLocation(program, 'mTranslate');
+async function draw(gl, vertices){
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices),
+        gl.STATIC_DRAW);
+    gl.drawArrays(gl.TRIANGLES, 0, vertices.length / 8);
+}
+
+async function handleFPS(currentDelta, loop){
+  
+    // fps
+    updateId = requestAnimationFrame(loop);
+    const delta = currentDelta - previousDelta;
+    const fps = 1000 / delta;
+
+    if (fpsLimit && delta < (1000 / fpsLimit) - tolerance) 
+        return true;
+    
+    previousDelta = currentDelta;
+    fpsLabel.textContent = fps.toFixed(1);
+
+    console.log({fpsLimit, delta, tolerance, previousDelta})
+}
+
+async function position(gl, program, rotationAngle, translateVector3, scaleVector3, canvas){
+    let eye = [1, 2, 10];
+    
+    let worldLocation = gl.getUniformLocation(program, 'mWorld');
+    let viewLocation = gl.getUniformLocation(program, 'mView');
+    let projLocation = gl.getUniformLocation(program, 'mProj');
+    let translLocation = gl.getUniformLocation(program, 'mTranslate');
 
     let identityMatrix = new glMatrix.mat4.create();
     let worldMatrix = new glMatrix.mat4.create();
@@ -89,22 +116,16 @@ async function place(gl, program, rotationAngle, translateVector3, scaleVector3)
     let translateMatrix = new glMatrix.mat4.create();
 
     identity(identityMatrix);
-
     rotateY(translateMatrix, identityMatrix, rotationAngle * Math.PI / 180);
     translate(translateMatrix, translateMatrix, translateVector3)
     scale(translateMatrix, translateMatrix, scaleVector3);
-
-    let eye = [1, 2, 10];
     lookAt(viewMatrix, eye, [0, 0, 0], [0, 1, 0]);
-
     perspective(projMatrix, 45 * Math.PI / 180, canvas.clientWidth / canvas.clientHeight, 0.1, 1000.0);
 
-    gl.uniformMatrix4fv(matWorldUniformLocation, gl.FALSE, worldMatrix);
-    gl.uniformMatrix4fv(matViewUniformLocation, gl.FALSE, viewMatrix);
-    gl.uniformMatrix4fv(matProjUniformLocation, gl.FALSE, projMatrix);
-    gl.uniformMatrix4fv(matTranslateUniformLocation, gl.FALSE, translateMatrix);
-    
-    return {translate: translateMatrix, identity: identityMatrix, world: worldMatrix, proj:projMatrix, view:viewMatrix}
+    gl.uniformMatrix4fv(worldLocation, gl.FALSE, worldMatrix);
+    gl.uniformMatrix4fv(viewLocation, gl.FALSE, viewMatrix);
+    gl.uniformMatrix4fv(projLocation, gl.FALSE, projMatrix);
+    gl.uniformMatrix4fv(translLocation, gl.FALSE, translateMatrix);
 }
 
 async function init() {
@@ -204,56 +225,29 @@ async function init() {
     const textureSelector = gl.getUniformLocation(skyboxProgram, "textureSelector");
 
     let counter = 0;
+    let then = 0;
 
     async function loop(currentDelta) {
-        updateId = requestAnimationFrame(loop);
-
-        const delta = currentDelta - previousDelta;
-
         
-        if (fpsLimit && delta < (1000 / fpsLimit) - tolerance) {
+        if(await handleFPS(currentDelta, loop)) {
             return;
         }
         
-        gl.useProgram(skyboxProgram);
-        
+
         counter -= 0.3;
-
-        // select TEXTURE0 as texture
-        gl.uniform1i(textureSelector, 0);
         
-        let placeObj = await place(gl, skyboxProgram, counter, [0, 0, 0], [100, 100, 100])
-        let worldMatrix = placeObj.world
-        let projMatrix = placeObj.proj
-        let identityMatrix = placeObj.identity
-        let viewMatrix = placeObj.view
-
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(boxVertices),
-            gl.STATIC_DRAW);
-        gl.drawArrays(gl.TRIANGLES, 0, boxVertices.length / 8);
+        gl.useProgram(skyboxProgram);
+        await position(gl, skyboxProgram, counter, [0, 0, 0], [100, 100, 100], canvas)
+        await draw(gl, boxVertices)
+        
 
         
         // teapot
-        let translateMatrix = new glMatrix.mat4.create();
-        rotateY(translateMatrix, identityMatrix, counter * Math.PI / 180);
-        translate(translateMatrix, translateMatrix, [0, -0.4, 0])
-        
         gl.useProgram(teapotProgram);
-        let teapotMatWorldUniformLocation = gl.getUniformLocation(teapotProgram, 'mWorld');
-        let teapotMatViewUniformLocation = gl.getUniformLocation(teapotProgram, 'mView');
-        let teapotMatProjUniformLocation = gl.getUniformLocation(teapotProgram, 'mProj');
-        let teapotMatTranslateUniformLocation = gl.getUniformLocation(teapotProgram, 'mTranslate');
+        await position(gl, teapotProgram, counter, [0, -0.4, 0], [1, 1, 1], canvas)
+        await draw(gl, teapotVertices)
 
-        gl.uniformMatrix4fv(teapotMatWorldUniformLocation, gl.FALSE, worldMatrix);
-        gl.uniformMatrix4fv(teapotMatViewUniformLocation, gl.FALSE, viewMatrix);
-        gl.uniformMatrix4fv(teapotMatProjUniformLocation, gl.FALSE, projMatrix);
-        gl.uniformMatrix4fv(teapotMatTranslateUniformLocation, gl.FALSE, translateMatrix);
         
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(teapotVertices),
-            gl.STATIC_DRAW);
-        gl.drawArrays(gl.TRIANGLES, 0, teapotVertices.length / 8);
-
-        previousDelta = currentDelta;
     }
 
     requestAnimationFrame(loop);
