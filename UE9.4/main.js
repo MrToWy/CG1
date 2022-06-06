@@ -86,8 +86,8 @@ async function place(gl, program, rotationAngle, translateVector3, scaleVector3)
     identity(identityMatrix);
 
     rotateY(translateMatrix, identityMatrix, rotationAngle * Math.PI / 180);
-    translate(translateMatrix, translateMatrix, [0, -0.4, 0])
-    scale(translateMatrix, translateMatrix, [1000, 1000, 1000]);
+    translate(translateMatrix, translateMatrix, translateVector3)
+    scale(translateMatrix, translateMatrix, scaleVector3);
 
     let eye = [1, 2, 10];
     lookAt(viewMatrix, eye, [0, 0, 0], [0, 1, 0]);
@@ -208,7 +208,7 @@ async function init() {
         // select TEXTURE0 as texture
         gl.uniform1i(textureSelector, 0);
         
-        let placeObj = await place(gl, skyboxProgram, counter)
+        let placeObj = await place(gl, skyboxProgram, counter, [0, 0, 0], [100, 100, 100])
         let worldMatrix = placeObj.world
         let projMatrix = placeObj.proj
         let identityMatrix = placeObj.identity
