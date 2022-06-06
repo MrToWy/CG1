@@ -3,6 +3,11 @@
 const skyboxPath = "skybox/"
 const teapotPath = "teapot/"
 
+let tolerance = 0.01;
+let updateId;
+let previousDelta = 0;
+let fpsLimit = 24;
+
 async function getShader(shaderPath, glContext){
     let response = await fetch(shaderPath);
     let shaderText = await response.text();
@@ -200,7 +205,16 @@ async function init() {
 
     let counter = 0;
 
-    async function loop() {
+    async function loop(currentDelta) {
+        updateId = requestAnimationFrame(loop);
+
+        const delta = currentDelta - previousDelta;
+
+        
+        if (fpsLimit && delta < (1000 / fpsLimit) - tolerance) {
+            return;
+        }
+        
         gl.useProgram(skyboxProgram);
         
         counter -= 0.3;
@@ -238,8 +252,8 @@ async function init() {
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(teapotVertices),
             gl.STATIC_DRAW);
         gl.drawArrays(gl.TRIANGLES, 0, teapotVertices.length / 8);
-        
-        requestAnimationFrame(loop);
+
+        previousDelta = currentDelta;
     }
 
     requestAnimationFrame(loop);
