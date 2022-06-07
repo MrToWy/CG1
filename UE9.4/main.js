@@ -77,7 +77,7 @@ async function bindParameters(gl, program){
         8 * Float32Array.BYTES_PER_ELEMENT,
         0);
 
-    const teapotColorAttributeLocation = gl.getAttribLocation(program, "vertColor");
+    const teapotColorAttributeLocation = gl.getAttribLocation(program, "normals");
     gl.vertexAttribPointer(teapotColorAttributeLocation,
         3, gl.FLOAT, false,
         8 * Float32Array.BYTES_PER_ELEMENT,
@@ -105,8 +105,6 @@ async function handleFPS(currentDelta, loop){
     
     previousDelta = currentDelta;
     fpsLabel.textContent = fps.toFixed(1);
-
-    console.log({fpsLimit, delta, tolerance, previousDelta})
 }
 
 async function position(gl, program, rotationAngle, translateVector3, scaleVector3, canvas){
@@ -203,7 +201,7 @@ async function init() {
     gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
 
     gl.enable(gl.DEPTH_TEST);
-
+    
 
     let counter = 0;
 
@@ -224,6 +222,7 @@ async function init() {
         // teapot
         gl.useProgram(teapotProgram);
         await position(gl, teapotProgram, counter, [0, -0.4, 0], [1, 1, 1], canvas)
+        
         await draw(gl, teapotVertices)
     }
 
