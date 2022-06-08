@@ -222,7 +222,6 @@ async function init() {
         // teapot
         gl.useProgram(teapotProgram);
         await position(gl, teapotProgram, counter, [0, -0.4, 0], [1, 1, 1], canvas)
-        
         await draw(gl, teapotVertices)
     }
 
