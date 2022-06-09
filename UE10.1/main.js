@@ -1,16 +1,19 @@
 'use strict';
 
-const skyboxPath = "skybox/"
+const skyboxPath = "box/"
 const teapotPath = "teapot/"
 
 let tolerance = 0.01;
 let updateId;
 let previousDelta = 0;
-let fpsLimit = 30;
+let fpsLimit = 100
 
 const fpsLabel = document.getElementById("fps");
 const canvas = document.getElementById("canvas")
 const gl = canvas.getContext("webgl");
+const fogNearInput = document.getElementById("fogNear")
+const fogFarInput = document.getElementById("fogFar")
+const valuesLabel = document.getElementById("values")
 
 
 async function getShader(shaderPath, glContext){
@@ -62,7 +65,6 @@ async function getTeapotVertices(gl, teapotProgram){
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
     gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.useProgram(teapotProgram);
     gl.bindBuffer(gl.ARRAY_BUFFER, teapotVBO);
     
     await bindParameters(gl, teapotProgram)
@@ -108,7 +110,7 @@ async function handleFPS(currentDelta, loop){
 }
 
 async function position(gl, program, rotationAngle, translateVector3, scaleVector3, canvas){
-    let eye = [1, 2, 10];    
+    let eye = [-3, -3, -10];    
     
     let worldLocation = gl.getUniformLocation(program, 'mWorld');
     let viewLocation = gl.getUniformLocation(program, 'mView');
@@ -182,6 +184,7 @@ async function init() {
     
     let texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture)
+    
 
 
     const level = 0;
@@ -205,8 +208,21 @@ async function init() {
     
 
     let counter = 0;
+    
+    gl.useProgram(skyboxProgram)
+    
+    let clearColor = [1.0, 0.8, 0.9, 1.0]
+    gl.clearColor(clearColor[0], clearColor[1], clearColor[2], clearColor[3]);
+
+    let fogColor = gl.getUniformLocation(skyboxProgram, 'fogColor');
+    let fogNear = gl.getUniformLocation(skyboxProgram, 'fogNear');
+    let fogFar = gl.getUniformLocation(skyboxProgram, 'fogFar');
+    
+
+    
 
     async function loop(currentDelta) {
+       
         
         if(await handleFPS(currentDelta, loop)) {
             return;
@@ -215,17 +231,33 @@ async function init() {
         counter -= 0.3;
         
         // skybox
+
+        gl.uniform4f(fogColor, clearColor[0], clearColor[1], clearColor[2], clearColor[3]);
+        
+        let fogNearValue = fogNearInput.value/1000.;
+        let fogFarValue = fogFarInput.value/1000.;
+        
+        gl.uniform1f(fogNear, fogNearValue);
+        gl.uniform1f(fogFar, fogFarValue);
+        valuesLabel.innerHTML = "Far: " + fogFarValue + "   - Near: " + fogNearValue;
+
         gl.useProgram(skyboxProgram);
-        await position(gl, skyboxProgram, counter, [0, 0, 0], [100, 100, 100], canvas)
-        await draw(gl, boxVertices)
-        
-        
-        // teapot
-        gl.useProgram(teapotProgram);
-        await position(gl, teapotProgram, counter, [-3, -0.4, 0], [1, 1, 1], canvas)
-        await draw(gl, teapotVertices)
+
+        gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
+        for (let i = 0; i < 8; i+=1.5) {
+            for (let j = 0; j < 8; j+=1.5) {
+                for (let k = 0; k < 8; k+=1.5) {
+                    await position(gl, skyboxProgram, counter, [i, j, k], [1, 1, 1], canvas)
+
+                    await draw(gl, boxVertices)
+                }
+            }
+        }
+
     }
 
+    
+    
     requestAnimationFrame(loop);
 }
 
