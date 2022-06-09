@@ -6,7 +6,7 @@ const teapotPath = "teapot/"
 let tolerance = 0.01;
 let updateId;
 let previousDelta = 0;
-let fpsLimit = 100
+let fpsLimit = 1.
 
 const fpsLabel = document.getElementById("fps");
 const canvas = document.getElementById("canvas")
@@ -220,9 +220,7 @@ async function init() {
     
 
     
-
     async function loop(currentDelta) {
-       
         
         if(await handleFPS(currentDelta, loop)) {
             return;
@@ -230,11 +228,10 @@ async function init() {
         
         counter -= 0.3;
         
-        // skybox
 
         gl.uniform4f(fogColor, clearColor[0], clearColor[1], clearColor[2], clearColor[3]);
         
-        let fogNearValue = fogNearInput.value/1000.;
+        let fogNearValue = fogNearInput.value/10000.;
         let fogFarValue = fogFarInput.value/1000.;
         
         gl.uniform1f(fogNear, fogNearValue);
@@ -247,19 +244,15 @@ async function init() {
         for (let i = 0; i < 8; i+=1.5) {
             for (let j = 0; j < 8; j+=1.5) {
                 for (let k = 0; k < 8; k+=1.5) {
-                    await position(gl, skyboxProgram, counter, [i, j, k], [1, 1, 1], canvas)
+                    await position(gl, skyboxProgram, counter, [i, j-3.5, k], [1, 1, 1], canvas)
 
                     await draw(gl, boxVertices)
                 }
             }
         }
-
     }
-
-    
     
     requestAnimationFrame(loop);
 }
 
 window.onload = init;
-
