@@ -24,6 +24,7 @@ void main(){
 
     // send the view position to the fragment shader
     worldPosition = (mWorld * position).xyz;
+    worldPosition = vec3(1.0, 2.0, 10.0) - (mWorld * position).xyz;
 
     // orient the normals and pass to the fragment shader
     worldNormal = mat3(mWorld) * normals;

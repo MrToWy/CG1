@@ -1,6 +1,7 @@
 precision mediump float;
 varying vec3 fragColor;
 
+uniform vec3 cameraPosition;
 
 // Passed in from the vertex shader.
 varying vec3 worldPosition;

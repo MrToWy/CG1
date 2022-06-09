@@ -108,7 +108,7 @@ async function handleFPS(currentDelta, loop){
 }
 
 async function position(gl, program, rotationAngle, translateVector3, scaleVector3, canvas){
-    let eye = [1, 2, 10];
+    let eye = [1, 2, 10];    
     
     let worldLocation = gl.getUniformLocation(program, 'mWorld');
     let viewLocation = gl.getUniformLocation(program, 'mView');
@@ -122,10 +122,11 @@ async function position(gl, program, rotationAngle, translateVector3, scaleVecto
     let translateMatrix = new glMatrix.mat4.create();
 
     identity(identityMatrix);
-    rotateY(translateMatrix, identityMatrix, rotationAngle * Math.PI / 180);
+    lookAt(viewMatrix, eye, [0, 0, 0], [0, 1, 0]);
+    glMatrix.mat4.rotateY(viewMatrix, viewMatrix, rotationAngle * Math.PI / 180);
     translate(translateMatrix, translateMatrix, translateVector3)
     scale(translateMatrix, translateMatrix, scaleVector3);
-    lookAt(viewMatrix, eye, [0, 0, 0], [0, 1, 0]);
+    
     perspective(projMatrix, 45 * Math.PI / 180, canvas.clientWidth / canvas.clientHeight, 0.1, 1000.0);
 
     gl.uniformMatrix4fv(worldLocation, gl.FALSE, worldMatrix);
@@ -221,7 +222,7 @@ async function init() {
         
         // teapot
         gl.useProgram(teapotProgram);
-        await position(gl, teapotProgram, counter, [0, -0.4, 0], [1, 1, 1], canvas)
+        await position(gl, teapotProgram, counter, [-3, -0.4, 0], [1, 1, 1], canvas)
         await draw(gl, teapotVertices)
     }
 
