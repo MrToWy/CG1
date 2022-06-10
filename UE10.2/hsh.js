@@ -5,10 +5,11 @@ const vertexShaderText =
 precision mediump float;
 
 attribute vec2 vertPosition;
+attribute vec3 vertColor;
 varying vec3 fragColor;
 
 void main(){
-    fragColor = vec3(0.5,0.0,0.5);
+    fragColor = vertColor;
     gl_Position = vec4(vertPosition, 0.0, 1.0);
 }
 `;
@@ -26,7 +27,7 @@ void main(){
 function init(){
     console.log("Wir malen Kreise!");
     const canvas = document.getElementById("cg1");
-    const gl = canvas.getContext('webgl');
+    const gl = canvas.getContext('webgl', { premultipliedAlpha: false });
 
     const vertexShader = gl.createShader(gl.VERTEX_SHADER);
     gl.shaderSource(vertexShader, vertexShaderText);
@@ -51,27 +52,26 @@ function init(){
     gl.linkProgram(program);
     gl.validateProgram(program);
 
-    gl.clearColor(1.0, 0.8, 0.9, 1.0);
 
 
     const triangleVerticies=[
         // right line
-        0.5, 0.5,         //oben-rechts
-        -0.0, 0.5, //oben-links
-        0.5, -0.0,        //unten-rechts
-        -0.0, -0.0, // unten-rechts
-
-        0.25, 0.25,         //oben-rechts
-        -0.25, 0.25, //oben-links
-        0.25, -0.25,        //unten-rechts
-        -0.25, -0.25, // unten-rechts
-
-        0.75, 0.25,         //oben-rechts
-        0.25, 0.25, //oben-links
-        0.75, -0.25,        //unten-rechts
-        0.25, -0.25, // unten-rechts
-
  
+
+        0.35, 0.25, 0., 1., 0.,        //oben-rechts
+        -0.15, 0.25, 0., 1., 0., //oben-links
+        0.35, -0.25, 0., 1., 0.,       //unten-rechts
+        -0.15, -0.25, 0., 1., 0., // unten-rechts
+
+        0.65, 0.25,  0., 0., 1.,        //oben-rechts
+        0.15, 0.25, 0., 0., 1.,//oben-links
+        0.65, -0.25,  0., 0., 1.,      //unten-rechts
+        0.15, -0.25, 0., 0., 1.,// unten-rechts
+
+        0.5, 0.5,  1., 0., 0.,       //oben-rechts
+        -0.0, 0.5, 1., 0., 0.,//oben-links
+        0.5, -0.0, 1., 0., 0.,       //unten-rechts
+        -0.0, -0.0, 1., 0., 0., // unten-rechts
     ];
 
     const indexArray = [
@@ -108,14 +108,37 @@ function init(){
         2, // dimension
         gl.FLOAT,
         gl.FALSE,
-        2 * Float32Array.BYTES_PER_ELEMENT,
+        5 * Float32Array.BYTES_PER_ELEMENT,
         0
     );
     gl.enableVertexAttribArray(positionAttribLocation);
 
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.useProgram(program);
+    gl.bindBuffer(gl.ARRAY_BUFFER, triangleVBO);
+    const colorAttribLocation = gl.getAttribLocation(program, 'vertColor');
+    gl.vertexAttribPointer(
+        colorAttribLocation,
+        3, // dimension
+        gl.FLOAT,
+        gl.FALSE,
+        5 * Float32Array.BYTES_PER_ELEMENT,
+        2 * Float32Array.BYTES_PER_ELEMENT
+    );
+    gl.enableVertexAttribArray(colorAttribLocation);
+
     // enable cullface
     gl.enable(gl.CULL_FACE);
     gl.frontFace(gl.CCW); //gl.CW
+    gl.disable(gl.DEPTH_TEST);
+    
+    // transparency
+    gl.blendColor(1., 1., 1., 0.6)
+    //gl.clearColor(1., 0., 0., 0.6)
+    gl.enable(gl.BLEND)
+    gl.blendFuncSeparate(gl.SRC_ALPHA, gl.CONSTANT_ALPHA, gl.CONSTANT_ALPHA, gl.CONSTANT_ALPHA);
+    gl.blendEquationSeparate(gl.FUNC_ADD, gl.FUNC_ADD)
+   
 
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexVBO);
     // draw triangle
