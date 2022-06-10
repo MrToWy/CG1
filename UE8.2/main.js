@@ -107,6 +107,54 @@ async function handleFPS(currentDelta, loop){
     fpsLabel.textContent = fps.toFixed(1);
 }
 
+async function configureShader(gl, program){
+    await configureLighting(gl, program)
+    await configureMaterial(gl, program)
+}
+
+async function configureLighting(gl, program){
+    let lightPosition = [0.3, 0.3, 0.3, 0.3]
+    let lightAmbient = [0.3, 0.3, 0.3, 0.3]
+    let lightDiffuse = [0.3, 0.3, 0.3, 0.3]
+    let lightSpecular = [0.1, 0.1, 0.1, 0.1]
+    let lightHalfVector = [1., 1., 1.];
+
+    let lightPositionLocation = gl.getUniformLocation(program, 'lightPosition');
+    let lightAmbientLocation = gl.getUniformLocation(program, 'lightAmbient');
+    let lightDiffuseLocation = gl.getUniformLocation(program, 'lightDiffuse');
+    let lightSpecularLocation = gl.getUniformLocation(program, 'lightSpecular');
+    let lightHalfVectorLocation = gl.getUniformLocation(program, 'lightHalfVector');
+
+    gl.uniform4fv(lightPositionLocation, lightPosition)
+    gl.uniform4fv(lightAmbientLocation, lightAmbient)
+    gl.uniform4fv(lightDiffuseLocation, lightDiffuse)
+    gl.uniform4fv(lightSpecularLocation, lightSpecular)
+    gl.uniform3fv(lightHalfVectorLocation, lightHalfVector)
+}
+
+async function configureMaterial(gl, program){
+    let color = [0.9, 0.2, 0.1, 1.0]
+    let emission = [0.3, 0.3, 0.3, 0.3]
+    let ambient = [0.9, 0.0, 0.0, 0.3]
+    let diffuse = [0.9, 0.9, 0.9, 0.9]
+    let specular = [0.1, 0.1, 0.1, 0.1]
+    let shininess = 60.0;
+
+    let colorLocation = gl.getUniformLocation(program, 'fragColor');
+    let emissionLocation = gl.getUniformLocation(program, 'matEmission');
+    let ambientLocation = gl.getUniformLocation(program, 'matAmbient');
+    let diffuseLocation = gl.getUniformLocation(program, 'matDiffuse');
+    let specularLocation = gl.getUniformLocation(program, 'matSpecular');
+    let shininessLocation = gl.getUniformLocation(program, 'matShininess');
+
+    gl.uniform4fv(colorLocation, color)
+    gl.uniform4fv(emissionLocation, emission)
+    gl.uniform4fv(ambientLocation, ambient)
+    gl.uniform4fv(diffuseLocation, diffuse)
+    gl.uniform4fv(specularLocation, specular)
+    gl.uniform1f(shininessLocation, shininess)
+}
+
 async function position(gl, program, rotationAngle, translateVector3, scaleVector3, canvas){
     let eye = [1, 2, 10];
     
@@ -222,6 +270,7 @@ async function init() {
         // teapot
         gl.useProgram(teapotProgram);
         await position(gl, teapotProgram, counter, [0, -0.4, 0], [1, 1, 1], canvas)
+        await configureShader(gl, teapotProgram)
         await draw(gl, teapotVertices)
     }
 
