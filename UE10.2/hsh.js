@@ -53,39 +53,25 @@ function init(){
 
     gl.clearColor(1.0, 0.8, 0.9, 1.0);
 
-    const width = 0.2;
-    const top_limit = 0.8;
-    const bot_limit = -0.85;
-    const left_limit = -0.4;
-    const right_limit = 0.4;
-    
-    const letter_bot = -0.5;
-    const letter_mid_height = 0.1;
-    
+
     const triangleVerticies=[
         // right line
-        right_limit, top_limit,         //oben-rechts
-        right_limit - width, top_limit, //oben-links
-        right_limit, letter_bot,        //unten-rechts
-        right_limit - width, letter_bot,//unten-links
+        0.5, 0.5,         //oben-rechts
+        -0.0, 0.5, //oben-links
+        0.5, -0.0,        //unten-rechts
+        -0.0, -0.0, // unten-rechts
 
-        // mid line
-        right_limit, letter_mid_height + width, // top right
-        left_limit, letter_mid_height + width, // top left
-        right_limit, letter_mid_height, // bot right
-        left_limit, letter_mid_height,// bot left
+        0.25, 0.25,         //oben-rechts
+        -0.25, 0.25, //oben-links
+        0.25, -0.25,        //unten-rechts
+        -0.25, -0.25, // unten-rechts
 
-        // left line
-        left_limit + width, top_limit,  //oben-rechts
-        left_limit, top_limit,          //oben-links
-        left_limit + width, letter_bot, //unten-rechts
-        left_limit, letter_bot,         //unten-links
+        0.75, 0.25,         //oben-rechts
+        0.25, 0.25, //oben-links
+        0.75, -0.25,        //unten-rechts
+        0.25, -0.25, // unten-rechts
 
-        // bot line
-        right_limit, bot_limit + width, // top right
-        left_limit, bot_limit + width, // top left
-        right_limit, bot_limit, // bot right
-        left_limit, bot_limit,// bot left
+ 
     ];
 
     const indexArray = [
@@ -93,9 +79,7 @@ function init(){
         3,4,        // from right to mid
         4,5,6,7,    // middle line
         7,8,        // from mid to left
-        8,9,10,11,  // left line
-        11,12,      // from left to bot
-        12,13,14,15 // bot line
+        8,9,10,11
     ];
 
 
@@ -135,6 +119,7 @@ function init(){
 
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexVBO);
     // draw triangle
+    
     gl.drawElements(gl.TRIANGLE_STRIP,indexArray.length,gl.UNSIGNED_SHORT,0);
     
 }
