@@ -6,7 +6,7 @@ const teapotPath = "teapot/"
 let tolerance = 0.01;
 let updateId;
 let previousDelta = 0;
-let fpsLimit = 1.
+let fpsLimit = 195.
 
 const fpsLabel = document.getElementById("fps");
 const canvas = document.getElementById("canvas")
@@ -109,23 +109,28 @@ async function handleFPS(currentDelta, loop){
     fpsLabel.textContent = fps.toFixed(1);
 }
 
-async function position(gl, program, rotationAngle, translateVector3, scaleVector3, canvas){
-    let eye = [-3, -3, -10];    
+async function position(gl, program, cameraRotationAngle, rotationAngle, translateVector3, scaleVector3, canvas){
+    let eye = [0, 5, -10];    
     
     let worldLocation = gl.getUniformLocation(program, 'mWorld');
     let viewLocation = gl.getUniformLocation(program, 'mView');
     let projLocation = gl.getUniformLocation(program, 'mProj');
     let translLocation = gl.getUniformLocation(program, 'mTranslate');
+    let rotateLocation = gl.getUniformLocation(program, 'mRotate');
 
     let identityMatrix = new glMatrix.mat4.create();
     let worldMatrix = new glMatrix.mat4.create();
     let viewMatrix = new glMatrix.mat4.create();
     let projMatrix = new glMatrix.mat4.create();
     let translateMatrix = new glMatrix.mat4.create();
+    let rotationMatrix = new glMatrix.mat4.create();
 
     identity(identityMatrix);
     lookAt(viewMatrix, eye, [0, 0, 0], [0, 1, 0]);
-    glMatrix.mat4.rotateY(viewMatrix, viewMatrix, rotationAngle * Math.PI / 180);
+    
+    glMatrix.mat4.rotateY(viewMatrix, viewMatrix, cameraRotationAngle * Math.PI / 180); // rotate cam
+    glMatrix.mat4.rotateY(rotationMatrix, identityMatrix, rotationAngle * Math.PI / 180); // rotate object
+    
     translate(translateMatrix, translateMatrix, translateVector3)
     scale(translateMatrix, translateMatrix, scaleVector3);
     
@@ -135,6 +140,7 @@ async function position(gl, program, rotationAngle, translateVector3, scaleVecto
     gl.uniformMatrix4fv(viewLocation, gl.FALSE, viewMatrix);
     gl.uniformMatrix4fv(projLocation, gl.FALSE, projMatrix);
     gl.uniformMatrix4fv(translLocation, gl.FALSE, translateMatrix);
+    gl.uniformMatrix4fv(rotateLocation, gl.FALSE, rotationMatrix);
 }
 
 async function init() {
@@ -207,7 +213,7 @@ async function init() {
     gl.enable(gl.DEPTH_TEST);
     
 
-    let counter = 0;
+    let counter = 45;
     
     gl.useProgram(skyboxProgram)
     
@@ -226,7 +232,7 @@ async function init() {
             return;
         }
         
-        counter -= 0.3;
+        counter -= 0.0;
         
 
         gl.uniform4f(fogColor, clearColor[0], clearColor[1], clearColor[2], clearColor[3]);
@@ -241,15 +247,19 @@ async function init() {
         gl.useProgram(skyboxProgram);
 
         gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
-        for (let i = 0; i < 8; i+=1.5) {
-            for (let j = 0; j < 8; j+=1.5) {
-                for (let k = 0; k < 8; k+=1.5) {
-                    await position(gl, skyboxProgram, counter, [i, j-3.5, k], [1, 1, 1], canvas)
 
-                    await draw(gl, boxVertices)
-                }
-            }
-        }
+        await position(gl, skyboxProgram, counter, 0, [0., 0, -1], [1, 1, 1], canvas)
+        await draw(gl, boxVertices)
+
+        await position(gl, skyboxProgram, counter, 45/2, [1.5, 0, 1.5], [1, 1, 1], canvas)
+        await draw(gl, boxVertices)
+
+        await position(gl, skyboxProgram, counter, 45/2,[-1.5, 0, 1.5], [1, 1, 1], canvas)
+        await draw(gl, boxVertices)
+
+        let vertices = [1.,1.,2.,2.]
+        await position(gl, skyboxProgram, counter, 0,[-2., 0, 1], [1, 1, 1], canvas)
+        await draw(gl, vertices)
     }
     
     requestAnimationFrame(loop);
