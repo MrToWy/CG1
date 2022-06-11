@@ -6,6 +6,8 @@ uniform float fogNear;
 uniform float fogFar;
 uniform vec4 fogColor;
 
+uniform vec4 boxColor;
+
 
 void main(){
 
@@ -14,5 +16,5 @@ void main(){
 
 
 
-    gl_FragColor = color; //mix(color, nebelcolor, 1.0);
+    gl_FragColor = boxColor; //mix(color, nebelcolor, 1.0);
 }

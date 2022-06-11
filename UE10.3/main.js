@@ -6,7 +6,7 @@ const teapotPath = "teapot/"
 let tolerance = 0.01;
 let updateId;
 let previousDelta = 0;
-let fpsLimit = 195.
+let fpsLimit = 1.
 
 const fpsLabel = document.getElementById("fps");
 const canvas = document.getElementById("canvas")
@@ -117,6 +117,7 @@ async function position(gl, program, cameraRotationAngle, rotationAngle, transla
     let projLocation = gl.getUniformLocation(program, 'mProj');
     let translLocation = gl.getUniformLocation(program, 'mTranslate');
     let rotateLocation = gl.getUniformLocation(program, 'mRotate');
+    let scaleLocation = gl.getUniformLocation(program, 'mScale');
 
     let identityMatrix = new glMatrix.mat4.create();
     let worldMatrix = new glMatrix.mat4.create();
@@ -124,6 +125,7 @@ async function position(gl, program, cameraRotationAngle, rotationAngle, transla
     let projMatrix = new glMatrix.mat4.create();
     let translateMatrix = new glMatrix.mat4.create();
     let rotationMatrix = new glMatrix.mat4.create();
+    let scaleMatrix = new glMatrix.mat4.create();
 
     identity(identityMatrix);
     lookAt(viewMatrix, eye, [0, 0, 0], [0, 1, 0]);
@@ -132,7 +134,7 @@ async function position(gl, program, cameraRotationAngle, rotationAngle, transla
     glMatrix.mat4.rotateY(rotationMatrix, identityMatrix, rotationAngle * Math.PI / 180); // rotate object
     
     translate(translateMatrix, translateMatrix, translateVector3)
-    scale(translateMatrix, translateMatrix, scaleVector3);
+    scale(scaleMatrix, identityMatrix, scaleVector3);
     
     perspective(projMatrix, 45 * Math.PI / 180, canvas.clientWidth / canvas.clientHeight, 0.1, 1000.0);
 
@@ -141,6 +143,7 @@ async function position(gl, program, cameraRotationAngle, rotationAngle, transla
     gl.uniformMatrix4fv(projLocation, gl.FALSE, projMatrix);
     gl.uniformMatrix4fv(translLocation, gl.FALSE, translateMatrix);
     gl.uniformMatrix4fv(rotateLocation, gl.FALSE, rotationMatrix);
+    gl.uniformMatrix4fv(scaleLocation, gl.FALSE, scaleMatrix);
 }
 
 async function init() {
@@ -223,8 +226,8 @@ async function init() {
     let fogColor = gl.getUniformLocation(skyboxProgram, 'fogColor');
     let fogNear = gl.getUniformLocation(skyboxProgram, 'fogNear');
     let fogFar = gl.getUniformLocation(skyboxProgram, 'fogFar');
-    
 
+    let boxColorPosition = gl.getUniformLocation(skyboxProgram, 'boxColor');
     
     async function loop(currentDelta) {
         
@@ -232,10 +235,11 @@ async function init() {
             return;
         }
         
-        counter -= 0.0;
+        counter -= 0.3;
         
 
         gl.uniform4f(fogColor, clearColor[0], clearColor[1], clearColor[2], clearColor[3]);
+        
         
         let fogNearValue = fogNearInput.value/10000.;
         let fogFarValue = fogFarInput.value/1000.;
@@ -248,18 +252,37 @@ async function init() {
 
         gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
 
+        // boxes
+        gl.uniform4f(boxColorPosition, 1., 0., 0., 1.);
         await position(gl, skyboxProgram, counter, 0, [0., 0, -1], [1, 1, 1], canvas)
         await draw(gl, boxVertices)
 
+        gl.uniform4f(boxColorPosition, 0., 1., 0., 1.);
         await position(gl, skyboxProgram, counter, 45/2, [1.5, 0, 1.5], [1, 1, 1], canvas)
         await draw(gl, boxVertices)
 
+        gl.uniform4f(boxColorPosition, 0., 0., 1., 1.);
         await position(gl, skyboxProgram, counter, 45/2,[-1.5, 0, 1.5], [1, 1, 1], canvas)
         await draw(gl, boxVertices)
 
-        let vertices = [1.,1.,2.,2.]
-        await position(gl, skyboxProgram, counter, 0,[-2., 0, 1], [1, 1, 1], canvas)
-        await draw(gl, vertices)
+        
+        // planes
+        let scaleVector = [0.01, 5, 8];
+        gl.uniform4f(boxColorPosition, 0., 0., 1., 1.);
+        await position(gl, skyboxProgram, counter, 45,[4, 0, -4], scaleVector, canvas)
+        await draw(gl, boxVertices)
+
+        gl.uniform4f(boxColorPosition, 1., 0., 1., 1.);
+        await position(gl, skyboxProgram, counter, 45,[-4, 0, 4], scaleVector, canvas)
+        await draw(gl, boxVertices)
+
+        gl.uniform4f(boxColorPosition, 0., 1., 1., 1.);
+        await position(gl, skyboxProgram, counter, 135,[4, 0, 4], scaleVector, canvas)
+        await draw(gl, boxVertices)
+        
+        gl.uniform4f(boxColorPosition, 1., 1., 1., 1.);
+        await position(gl, skyboxProgram, counter, 135,[-4, 0, -4], scaleVector, canvas)
+        await draw(gl, boxVertices)
     }
     
     requestAnimationFrame(loop);
