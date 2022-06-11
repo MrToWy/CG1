@@ -6,11 +6,11 @@ const teapotPath = "teapot/"
 let tolerance = 0.01;
 let updateId;
 let previousDelta = 0;
-let fpsLimit = 1.
+let fpsLimit = 100.
 
 const fpsLabel = document.getElementById("fps");
 const canvas = document.getElementById("canvas")
-const gl = canvas.getContext("webgl");
+const gl = canvas.getContext('webgl', { premultipliedAlpha: false });
 const fogNearInput = document.getElementById("fogNear")
 const fogFarInput = document.getElementById("fogFar")
 const valuesLabel = document.getElementById("values")
@@ -110,7 +110,7 @@ async function handleFPS(currentDelta, loop){
 }
 
 async function position(gl, program, cameraRotationAngle, rotationAngle, translateVector3, scaleVector3, canvas){
-    let eye = [0, 5, -10];    
+    let eye = [0, 2, -10];    
     
     let worldLocation = gl.getUniformLocation(program, 'mWorld');
     let viewLocation = gl.getUniformLocation(program, 'mView');
@@ -236,8 +236,8 @@ async function init() {
         }
         
         counter -= 0.3;
-        
 
+        gl.disable(gl.BLEND)
         gl.uniform4f(fogColor, clearColor[0], clearColor[1], clearColor[2], clearColor[3]);
         
         
@@ -252,6 +252,8 @@ async function init() {
 
         gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
 
+        gl.depthMask(true)
+        
         // boxes
         gl.uniform4f(boxColorPosition, 1., 0., 0., 1.);
         await position(gl, skyboxProgram, counter, 0, [0., 0, -1], [1, 1, 1], canvas)
@@ -267,6 +269,16 @@ async function init() {
 
         
         // planes
+        
+        // transparency
+        gl.depthMask(false)
+        
+        gl.blendColor(1., 1., 1., 0.6)
+        gl.enable(gl.BLEND)
+        gl.blendFuncSeparate(gl.SRC_ALPHA, gl.CONSTANT_ALPHA, gl.CONSTANT_ALPHA, gl.CONSTANT_ALPHA);
+        gl.blendEquationSeparate(gl.FUNC_ADD, gl.FUNC_ADD)
+        
+        
         let scaleVector = [0.01, 5, 8];
         gl.uniform4f(boxColorPosition, 0., 0., 1., 1.);
         await position(gl, skyboxProgram, counter, 45,[4, 0, -4], scaleVector, canvas)
@@ -280,7 +292,7 @@ async function init() {
         await position(gl, skyboxProgram, counter, 135,[4, 0, 4], scaleVector, canvas)
         await draw(gl, boxVertices)
         
-        gl.uniform4f(boxColorPosition, 1., 1., 1., 1.);
+        gl.uniform4f(boxColorPosition, 0., 1., 1., 1.);
         await position(gl, skyboxProgram, counter, 135,[-4, 0, -4], scaleVector, canvas)
         await draw(gl, boxVertices)
     }
