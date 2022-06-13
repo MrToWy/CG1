@@ -2,6 +2,7 @@
 
 const skyboxPath = "skybox/"
 const teapotPath = "teapot/"
+const cubePath = "cube/"
 
 let tolerance = 0.01;
 let updateId;
@@ -77,6 +78,12 @@ async function bindParameters(gl, program){
         8 * Float32Array.BYTES_PER_ELEMENT,
         0);
 
+    const texCoordAttributeLocation = gl.getAttribLocation(program, "textureCoordinate");
+    gl.vertexAttribPointer(texCoordAttributeLocation,
+        2, gl.FLOAT, false,
+        8 * Float32Array.BYTES_PER_ELEMENT,
+        3 * Float32Array.BYTES_PER_ELEMENT);
+
     const teapotColorAttributeLocation = gl.getAttribLocation(program, "normals");
     gl.vertexAttribPointer(teapotColorAttributeLocation,
         3, gl.FLOAT, false,
@@ -84,6 +91,7 @@ async function bindParameters(gl, program){
         5 * Float32Array.BYTES_PER_ELEMENT);
 
     gl.enableVertexAttribArray(teapotPositionAttributeLocation);
+    gl.enableVertexAttribArray(texCoordAttributeLocation);
     gl.enableVertexAttribArray(teapotColorAttributeLocation);
 }
 
@@ -108,7 +116,7 @@ async function handleFPS(currentDelta, loop){
 }
 
 async function position(gl, program, rotationAngle, translateVector3, scaleVector3, canvas){
-    let eye = [1, 2, 10];    
+    let eye = [1, 5, 10];    
     
     let worldLocation = gl.getUniformLocation(program, 'mWorld');
     let viewLocation = gl.getUniformLocation(program, 'mView');
@@ -140,6 +148,7 @@ async function init() {
     // compile programs
     const teapotProgram = await getProgram([teapotPath + "teapotFragmentShader.frag", teapotPath + "teapotVertexShader.vert"], gl)
     const skyboxProgram = await getProgram([skyboxPath + "skyboxFragmentShader.frag", skyboxPath + "skyboxVertexShader.vert"], gl)
+    const cubeProgram = await getProgram([cubePath + "cubeFragmentShader.frag", cubePath + "cubeVertexShader.vert"], gl)
 
     // get vertices
     const teapotVertices = await getTeapotVertices(gl, teapotProgram)
@@ -216,14 +225,64 @@ async function init() {
         
         // skybox
         gl.useProgram(skyboxProgram);
-        await position(gl, skyboxProgram, counter, [0, 0, 0], [100, 100, 100], canvas)
+        await position(gl, skyboxProgram, counter, [0, 0, 0], [1, 0, 0], canvas)
         await draw(gl, boxVertices)
-        
+
+
+
+
+        // Create a texture to render to
+        const targetTextureWidth = 256;
+        const targetTextureHeight = 256;
+        const targetTexture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, targetTexture);
+
+        {
+            // define size and format of level 0
+            const level = 0;
+            const internalFormat = gl.RGBA;
+            const border = 0;
+            const format = gl.RGBA;
+            const type = gl.UNSIGNED_BYTE;
+            const data = null;
+            gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
+                targetTextureWidth, targetTextureHeight, border,
+                format, type, data);
+
+            // set the filtering so we don't need mips
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        }
+
+
+        // Create and bind the framebuffer
+        const fb = gl.createFramebuffer();
+        gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+
+        gl.viewport(0, 0, targetTextureWidth, targetTextureHeight);
         
         // teapot
         gl.useProgram(teapotProgram);
-        await position(gl, teapotProgram, counter, [-3, -0.4, 0], [1, 1, 1], canvas)
+        await position(gl, teapotProgram, counter, [-0, -0.0, 0], [1, 1, 1], canvas)
         await draw(gl, teapotVertices)
+
+        // attach the texture as the first color attachment
+        const attachmentPoint = gl.COLOR_ATTACHMENT0;
+        const level = 0;
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, attachmentPoint, gl.TEXTURE_2D, targetTexture, level);
+
+        
+        
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null)
+
+
+        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+
+        // cube
+        gl.useProgram(cubeProgram);
+        await position(gl, cubeProgram, counter, [0, 3, 0], [1, 1, 1], canvas)
+        await draw(gl, boxVertices)
     }
 
     requestAnimationFrame(loop);
