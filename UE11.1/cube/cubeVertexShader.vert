@@ -3,6 +3,7 @@ precision mediump float;
 attribute vec3 vertPosition;
 attribute vec3 vertColor;
 attribute vec2 textureCoordinate;
+attribute vec3 normals;
 
 uniform mat4 mWorld;
 uniform mat4 mView;

@@ -1,6 +1,5 @@
 'use strict';
 
-const skyboxPath = "skybox/"
 const teapotPath = "teapot/"
 const cubePath = "cube/"
 
@@ -12,6 +11,8 @@ let fpsLimit = 30;
 const fpsLabel = document.getElementById("fps");
 const canvas = document.getElementById("canvas")
 const gl = canvas.getContext("webgl");
+
+const VBO = gl.createBuffer();
 
 
 async function getShader(shaderPath, glContext){
@@ -35,7 +36,6 @@ async function getProgram(shaderPaths, glContext){
     for (const shaderPath of shaderPaths) 
         glContext.attachShader(program, await getShader(shaderPath, glContext));
     
-    
     glContext.linkProgram(program);
     glContext.validateProgram(program);
 
@@ -45,54 +45,61 @@ async function getProgram(shaderPaths, glContext){
     return program;
 }
 
-async function getBoxVertices(){
-    let boxRequest = await fetch(skyboxPath + "box.obj");
-    let boxText = await boxRequest.text();
-    return objToVBO(boxText);
-}
+async function bindVerticesToBuffer(vertices, program){
+    gl.useProgram(program);
 
-async function getTeapotVertices(gl, teapotProgram){
-    let teapotRequest = await fetch(teapotPath + "teapot.obj");
-    let teapotText = await teapotRequest.text();
-    const teapotVertices = objToVBO(teapotText);
-
-    const teapotVBO = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, teapotVBO);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(teapotVertices),
+    gl.bindBuffer(gl.ARRAY_BUFFER, VBO);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices),
         gl.STATIC_DRAW);
-    gl.bindBuffer(gl.ARRAY_BUFFER, null);
-
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.useProgram(teapotProgram);
-    gl.bindBuffer(gl.ARRAY_BUFFER, teapotVBO);
     
-    await bindParameters(gl, teapotProgram)
-    
-    return teapotVertices;
 }
 
-async function bindParameters(gl, program){
+async function getVertices(gl, program, objPath){
+    let request = await fetch(objPath);
+    let boxText = await request.text();
+    let vertices = objToVBO(boxText, program);
+
+    await bindVerticesToBuffer(vertices);
+    
+    bindParameters(gl, program, objPath)
+    return vertices;
+}
+
+
+async function bindParameters(gl, program, name){
+    gl.useProgram(program);
+    
     const teapotPositionAttributeLocation = gl.getAttribLocation(program, "vertPosition");
+
     gl.vertexAttribPointer(teapotPositionAttributeLocation,
         3, gl.FLOAT, false,
         8 * Float32Array.BYTES_PER_ELEMENT,
         0);
 
-    const texCoordAttributeLocation = gl.getAttribLocation(program, "textureCoordinate");
-    gl.vertexAttribPointer(texCoordAttributeLocation,
-        2, gl.FLOAT, false,
-        8 * Float32Array.BYTES_PER_ELEMENT,
-        3 * Float32Array.BYTES_PER_ELEMENT);
-
-    const teapotColorAttributeLocation = gl.getAttribLocation(program, "normals");
-    gl.vertexAttribPointer(teapotColorAttributeLocation,
-        3, gl.FLOAT, false,
-        8 * Float32Array.BYTES_PER_ELEMENT,
-        5 * Float32Array.BYTES_PER_ELEMENT);
-
     gl.enableVertexAttribArray(teapotPositionAttributeLocation);
-    gl.enableVertexAttribArray(texCoordAttributeLocation);
-    gl.enableVertexAttribArray(teapotColorAttributeLocation);
+
+    
+    if(name === "teapot/teapot.obj"){
+        const teapotColorAttributeLocation = gl.getAttribLocation(program, "normals");
+        
+        gl.vertexAttribPointer(teapotColorAttributeLocation,
+            3, gl.FLOAT, gl.FALSE,
+            8 * Float32Array.BYTES_PER_ELEMENT,
+            5 * Float32Array.BYTES_PER_ELEMENT);
+
+        gl.enableVertexAttribArray(teapotColorAttributeLocation);
+    }
+    
+    if(name === "cube/box.obj"){
+        const texCoordAttributeLocation = gl.getAttribLocation(program, "textureCoordinate");
+        
+        gl.vertexAttribPointer(texCoordAttributeLocation,
+            2, gl.FLOAT, false,
+            8 * Float32Array.BYTES_PER_ELEMENT,
+            3 * Float32Array.BYTES_PER_ELEMENT);
+        
+        gl.enableVertexAttribArray(texCoordAttributeLocation);
+    }
 }
 
 async function draw(gl, vertices){
@@ -115,25 +122,33 @@ async function handleFPS(currentDelta, loop){
     fpsLabel.textContent = fps.toFixed(1);
 }
 
-async function position(gl, program, rotationAngle, translateVector3, scaleVector3, canvas){
-    let eye = [1, 5, 10];    
+async function position(gl, program, objRotationAngle, cameraRotationAngle, translateVector3, scaleVector3, canvas, eye){
+     
     
     let worldLocation = gl.getUniformLocation(program, 'mWorld');
     let viewLocation = gl.getUniformLocation(program, 'mView');
     let projLocation = gl.getUniformLocation(program, 'mProj');
     let translLocation = gl.getUniformLocation(program, 'mTranslate');
+    let scaleLocation = gl.getUniformLocation(program, 'mScale');
 
     let identityMatrix = new glMatrix.mat4.create();
     let worldMatrix = new glMatrix.mat4.create();
     let viewMatrix = new glMatrix.mat4.create();
     let projMatrix = new glMatrix.mat4.create();
     let translateMatrix = new glMatrix.mat4.create();
+    let scaleMatrix = new glMatrix.mat4.create();
 
     identity(identityMatrix);
+    identity(worldMatrix);
+    identity(viewMatrix);
+    identity(projMatrix);
+    identity(translateMatrix);
+    identity(scaleMatrix);
+    
     lookAt(viewMatrix, eye, [0, 0, 0], [0, 1, 0]);
-    glMatrix.mat4.rotateY(viewMatrix, viewMatrix, rotationAngle * Math.PI / 180);
+    glMatrix.mat4.rotateY(viewMatrix, viewMatrix, cameraRotationAngle * Math.PI / 180);
     translate(translateMatrix, translateMatrix, translateVector3)
-    scale(translateMatrix, translateMatrix, scaleVector3);
+    scale(scaleMatrix, scaleMatrix, scaleVector3);
     
     perspective(projMatrix, 45 * Math.PI / 180, canvas.clientWidth / canvas.clientHeight, 0.1, 1000.0);
 
@@ -141,78 +156,52 @@ async function position(gl, program, rotationAngle, translateVector3, scaleVecto
     gl.uniformMatrix4fv(viewLocation, gl.FALSE, viewMatrix);
     gl.uniformMatrix4fv(projLocation, gl.FALSE, projMatrix);
     gl.uniformMatrix4fv(translLocation, gl.FALSE, translateMatrix);
+    gl.uniformMatrix4fv(scaleLocation, gl.FALSE, translateMatrix);
 }
 
 async function init() {
+    gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
     
     // compile programs
     const teapotProgram = await getProgram([teapotPath + "teapotFragmentShader.frag", teapotPath + "teapotVertexShader.vert"], gl)
-    const skyboxProgram = await getProgram([skyboxPath + "skyboxFragmentShader.frag", skyboxPath + "skyboxVertexShader.vert"], gl)
     const cubeProgram = await getProgram([cubePath + "cubeFragmentShader.frag", cubePath + "cubeVertexShader.vert"], gl)
 
     // get vertices
-    const teapotVertices = await getTeapotVertices(gl, teapotProgram)
-    const boxVertices = await getBoxVertices();
+    const teapotVertices = await getVertices(gl, teapotProgram, teapotPath + "teapot.obj")
+    const boxVertices = await getVertices(gl, cubeProgram, cubePath + "box.obj");
     
-    // texture
-    let topImage = document.getElementById("top")
-    let bottomImage = document.getElementById("bottom")
-    let backImage = document.getElementById("back")
-    let frontImage = document.getElementById("front")
-    let leftImage = document.getElementById("left")
-    let rightImage = document.getElementById("right")
-    
-    const cubeMapFaces = [
-        {
-            target: gl.TEXTURE_CUBE_MAP_POSITIVE_X,
-            img: rightImage,
-        },
-        {
-            target: gl.TEXTURE_CUBE_MAP_POSITIVE_Y,
-            img: topImage,
-        },
-        {
-            target: gl.TEXTURE_CUBE_MAP_POSITIVE_Z,
-            img: frontImage,
-        },
-        {
-            target: gl.TEXTURE_CUBE_MAP_NEGATIVE_X,
-            img: leftImage,
-        },
-        {
-            target: gl.TEXTURE_CUBE_MAP_NEGATIVE_Y,
-            img: bottomImage,
-        },
-        {
-            target: gl.TEXTURE_CUBE_MAP_NEGATIVE_Z,
-            img: backImage,
-        },
-    ];
-    
-    let texture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture)
 
+    let texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
 
     const level = 0;
     const internalFormat = gl.RGBA;
+    const border = 0;
     const format = gl.RGBA;
     const type = gl.UNSIGNED_BYTE;
+    const data = null;
+    const targetTextureWidth = 256;
+    const targetTextureHeight = 256;
+    gl.texImage2D(gl.TEXTURE_2D, level, internalFormat, targetTextureWidth, targetTextureHeight, border, format, type, data);
 
-    cubeMapFaces.forEach((cubeMapFace) =>{
-        
-        const {target, img} = cubeMapFace;
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
-        // fill with img
-        gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
-        gl.texImage2D(target, level, internalFormat, format, type, img);
-        gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
-    })    
-    
-    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+    const fb = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D,texture, level);
+
+    const depthBuffer = gl.createRenderbuffer();
+    gl.bindRenderbuffer(gl.RENDERBUFFER, depthBuffer);
+
+    // make a depth buffer and the same size as the targetTexture
+    gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, targetTextureWidth, targetTextureHeight);
+    gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, depthBuffer);
+
 
     gl.enable(gl.DEPTH_TEST);
     
-
     let counter = 0;
 
     async function loop(currentDelta) {
@@ -222,57 +211,25 @@ async function init() {
         }
         
         counter -= 0.3;
-        
-        // skybox
-        gl.useProgram(skyboxProgram);
-        await position(gl, skyboxProgram, counter, [0, 0, 0], [1, 0, 0], canvas)
-        await draw(gl, boxVertices)
-
-
-
-
-        // Create a texture to render to
-        const targetTextureWidth = 256;
-        const targetTextureHeight = 256;
-        const targetTexture = gl.createTexture();
-        gl.bindTexture(gl.TEXTURE_2D, targetTexture);
-
-        {
-            // define size and format of level 0
-            const level = 0;
-            const internalFormat = gl.RGBA;
-            const border = 0;
-            const format = gl.RGBA;
-            const type = gl.UNSIGNED_BYTE;
-            const data = null;
-            gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
-                targetTextureWidth, targetTextureHeight, border,
-                format, type, data);
-
-            // set the filtering so we don't need mips
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        }
-
-
-        // Create and bind the framebuffer
-        const fb = gl.createFramebuffer();
-        gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
-
+        gl.clearColor(0., 0., 0., 1.);
         gl.viewport(0, 0, targetTextureWidth, targetTextureHeight);
         
         // teapot
         gl.useProgram(teapotProgram);
-        await position(gl, teapotProgram, counter, [-0, -0.0, 0], [1, 1, 1], canvas)
+        gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+        
+        let eye = [0, 1, 10];
+        await position(gl, teapotProgram, counter, counter, [-0, 0.0, 0], [1, 1, 1], canvas, eye)
+        
+        bindParameters(gl, teapotProgram, teapotPath + "teapot.obj")
+        
+        gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);       
         await draw(gl, teapotVertices)
 
         // attach the texture as the first color attachment
         const attachmentPoint = gl.COLOR_ATTACHMENT0;
         const level = 0;
-        gl.framebufferTexture2D(gl.FRAMEBUFFER, attachmentPoint, gl.TEXTURE_2D, targetTexture, level);
-
-        
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, attachmentPoint, gl.TEXTURE_2D, texture, level);
         
         gl.bindFramebuffer(gl.FRAMEBUFFER, null)
 
@@ -280,9 +237,22 @@ async function init() {
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
         // cube
+        
         gl.useProgram(cubeProgram);
-        await position(gl, cubeProgram, counter, [0, 3, 0], [1, 1, 1], canvas)
+        
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        eye = [0, 0, 3];
+        await position(gl, cubeProgram, counter, counter, [0, 0, 0], [1, 1, 1], canvas, eye)
+
+        console.log(gl.getError())
+
+        gl.clearColor(1., 0., 0., 1.);
+        gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
+
+        bindParameters(gl, cubeProgram, cubePath + "box.obj")
         await draw(gl, boxVertices)
+
+        
     }
 
     requestAnimationFrame(loop);
