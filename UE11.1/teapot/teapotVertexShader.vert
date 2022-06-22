@@ -2,6 +2,7 @@ precision mediump float;
 
 attribute vec3 vertPosition;
 attribute vec3 vertColor;
+attribute vec2 textureCoordinate;
 attribute vec3 normals;
 
 uniform mat4 mWorld;
@@ -18,7 +19,7 @@ varying vec3 worldNormal;
 void main(){
     vec4 position = vec4(vertPosition, 1.0);
 
-    fragColor = vertColor;
+    fragColor = normals;
     gl_Position = mProj * mView *   mTranslate * mWorld * position;
 
 
