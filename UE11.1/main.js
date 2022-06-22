@@ -52,7 +52,6 @@ async function bindVerticesToBuffer(vertices, program){
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices),
         gl.STATIC_DRAW);
     
-    
 }
 
 async function getVertices(gl, program, objPath){
@@ -68,6 +67,8 @@ async function getVertices(gl, program, objPath){
 
 
 async function bindParameters(gl, program, name){
+    gl.useProgram(program);
+    
     const teapotPositionAttributeLocation = gl.getAttribLocation(program, "vertPosition");
 
     gl.vertexAttribPointer(teapotPositionAttributeLocation,
@@ -138,6 +139,12 @@ async function position(gl, program, objRotationAngle, cameraRotationAngle, tran
     let scaleMatrix = new glMatrix.mat4.create();
 
     identity(identityMatrix);
+    identity(worldMatrix);
+    identity(viewMatrix);
+    identity(projMatrix);
+    identity(translateMatrix);
+    identity(scaleMatrix);
+    
     lookAt(viewMatrix, eye, [0, 0, 0], [0, 1, 0]);
     glMatrix.mat4.rotateY(viewMatrix, viewMatrix, cameraRotationAngle * Math.PI / 180);
     translate(translateMatrix, translateMatrix, translateVector3)
@@ -212,15 +219,18 @@ async function init() {
 
         gl.clearColor(0., 0., 0., 1.);
        
-        gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+       
 
         gl.viewport(0, 0, targetTextureWidth, targetTextureHeight);
         
         // teapot
         gl.useProgram(teapotProgram);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+        
         let eye = [0, 1, 10];
         await position(gl, teapotProgram, counter, counter, [-0, 0.0, 0], [1, 1, 1], canvas, eye)
-
+        
+        bindParameters(gl, teapotProgram, teapotPath + "teapot.obj")
         
         gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);       
         await draw(gl, teapotVertices)
@@ -249,6 +259,8 @@ async function init() {
 
         gl.clearColor(1., 0., 0., 1.);
         gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
+
+        bindParameters(gl, cubeProgram, cubePath + "box.obj")
         await draw(gl, boxVertices)
 
         
