@@ -160,7 +160,6 @@ async function position(gl, program, objRotationAngle, cameraRotationAngle, tran
 }
 
 async function init() {
-    gl.clearColor(1., 1., 0., 1.);
     gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
     
     // compile programs
@@ -170,8 +169,7 @@ async function init() {
     // get vertices
     const teapotVertices = await getVertices(gl, teapotProgram, teapotPath + "teapot.obj")
     const boxVertices = await getVertices(gl, cubeProgram, cubePath + "box.obj");
-
- 
+    
 
     let texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -197,14 +195,13 @@ async function init() {
     const depthBuffer = gl.createRenderbuffer();
     gl.bindRenderbuffer(gl.RENDERBUFFER, depthBuffer);
 
-// make a depth buffer and the same size as the targetTexture
+    // make a depth buffer and the same size as the targetTexture
     gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, targetTextureWidth, targetTextureHeight);
     gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, depthBuffer);
 
 
     gl.enable(gl.DEPTH_TEST);
     
-
     let counter = 0;
 
     async function loop(currentDelta) {
@@ -214,13 +211,7 @@ async function init() {
         }
         
         counter -= 0.3;
-
-
-
         gl.clearColor(0., 0., 0., 1.);
-       
-       
-
         gl.viewport(0, 0, targetTextureWidth, targetTextureHeight);
         
         // teapot
@@ -248,8 +239,6 @@ async function init() {
         // cube
         
         gl.useProgram(cubeProgram);
-
-
         
         gl.bindTexture(gl.TEXTURE_2D, texture);
         eye = [0, 0, 3];
