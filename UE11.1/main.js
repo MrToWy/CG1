@@ -7,6 +7,9 @@ let tolerance = 0.01;
 let updateId;
 let previousDelta = 0;
 let fpsLimit = 30;
+const targetTextureWidth = 1024;
+const targetTextureHeight = targetTextureWidth;
+
 
 const fpsLabel = document.getElementById("fps");
 const canvas = document.getElementById("canvas")
@@ -29,12 +32,12 @@ async function getShader(shaderPath, glContext){
     return shader;
 }
 
-async function getProgram(shaderPaths, glContext){
+async function getProgram(shaderPath, glContext){
 
     const program = glContext.createProgram();
 
-    for (const shaderPath of shaderPaths) 
-        glContext.attachShader(program, await getShader(shaderPath, glContext));
+    glContext.attachShader(program, await getShader(shaderPath + "shader.vert", glContext));
+    glContext.attachShader(program, await getShader(shaderPath + "shader.frag", glContext));
     
     glContext.linkProgram(program);
     glContext.validateProgram(program);
@@ -159,47 +162,62 @@ async function position(gl, program, objRotationAngle, cameraRotationAngle, tran
     gl.uniformMatrix4fv(scaleLocation, gl.FALSE, translateMatrix);
 }
 
-async function init() {
-    gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
-    
-    // compile programs
-    const teapotProgram = await getProgram([teapotPath + "teapotFragmentShader.frag", teapotPath + "teapotVertexShader.vert"], gl)
-    const cubeProgram = await getProgram([cubePath + "cubeFragmentShader.frag", cubePath + "cubeVertexShader.vert"], gl)
+const level = 0;
 
-    // get vertices
-    const teapotVertices = await getVertices(gl, teapotProgram, teapotPath + "teapot.obj")
-    const boxVertices = await getVertices(gl, cubeProgram, cubePath + "box.obj");
-    
-
+function getTextureForFramebuffer(){
     let texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, texture);
-
-    const level = 0;
+    
     const internalFormat = gl.RGBA;
     const border = 0;
     const format = gl.RGBA;
     const type = gl.UNSIGNED_BYTE;
     const data = null;
-    const targetTextureWidth = 256;
-    const targetTextureHeight = 256;
+    
     gl.texImage2D(gl.TEXTURE_2D, level, internalFormat, targetTextureWidth, targetTextureHeight, border, format, type, data);
 
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    
+    return texture;
+}
 
+function getFramebuffer(texture){
     const fb = gl.createFramebuffer();
     gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D,texture, level);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D,texture, 0);
 
     const depthBuffer = gl.createRenderbuffer();
     gl.bindRenderbuffer(gl.RENDERBUFFER, depthBuffer);
 
-    // make a depth buffer and the same size as the targetTexture
     gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, targetTextureWidth, targetTextureHeight);
     gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, depthBuffer);
+    
+    return fb;
+}
 
+function printError(gl){
+    let error = gl.getError();
+    if(error !== 0)
+        console.log(error)
+}
 
+async function init() {
+    gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
+    
+    // compile programs
+    const teapotProgram = await getProgram(teapotPath, gl)
+    const cubeProgram = await getProgram(cubePath, gl)
+
+    // get vertices
+    const teapotVertices = await getVertices(gl, teapotProgram, teapotPath + "teapot.obj")
+    const boxVertices = await getVertices(gl, cubeProgram, cubePath + "box.obj");
+    
+    // create framebuffer 
+    let texture = getTextureForFramebuffer();
+    let fb = getFramebuffer(texture);
+    
     gl.enable(gl.DEPTH_TEST);
     
     let counter = 0;
@@ -211,52 +229,37 @@ async function init() {
         }
         
         counter -= 0.3;
-        gl.clearColor(0., 0., 0., 1.);
+        
         gl.viewport(0, 0, targetTextureWidth, targetTextureHeight);
         
         // teapot
         gl.useProgram(teapotProgram);
         gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
         
-        let eye = [0, 1, 10];
-        await position(gl, teapotProgram, counter, counter, [-0, 0.0, 0], [1, 1, 1], canvas, eye)
-        
-        bindParameters(gl, teapotProgram, teapotPath + "teapot.obj")
-        
-        gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);       
+        await position(gl, teapotProgram, counter, counter*-1, [-0, 0.0, 0], [1, 1, 1], canvas, [0, 1, 7])
+        await bindParameters(gl, teapotProgram, teapotPath + "teapot.obj")
+        gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
+        printError(gl);
         await draw(gl, teapotVertices)
 
         // attach the texture as the first color attachment
         const attachmentPoint = gl.COLOR_ATTACHMENT0;
         const level = 0;
         gl.framebufferTexture2D(gl.FRAMEBUFFER, attachmentPoint, gl.TEXTURE_2D, texture, level);
-        
         gl.bindFramebuffer(gl.FRAMEBUFFER, null)
-
-
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
         // cube
-        
+        gl.clearColor(0., 0., 0., 1.);
         gl.useProgram(cubeProgram);
-        
         gl.bindTexture(gl.TEXTURE_2D, texture);
-        eye = [0, 0, 3];
-        await position(gl, cubeProgram, counter, counter, [0, 0, 0], [1, 1, 1], canvas, eye)
-
-        console.log(gl.getError())
-
-        gl.clearColor(1., 0., 0., 1.);
-        gl.clear(gl.DEPTH_BUFFER_BIT | gl.COLOR_BUFFER_BIT);
-
-        bindParameters(gl, cubeProgram, cubePath + "box.obj")
+        await position(gl, cubeProgram, counter, counter, [0, 0, 0], [1, 1, 1], canvas, [0, 0, 2])
+        await bindParameters(gl, cubeProgram, cubePath + "box.obj")
+        printError(gl);
         await draw(gl, boxVertices)
-
-        
     }
 
     requestAnimationFrame(loop);
 }
 
 window.onload = init;
-
